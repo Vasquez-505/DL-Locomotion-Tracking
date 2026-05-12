@@ -1,0 +1,10 @@
+{
+  "run_name": "drosophila_convnext_ft_993frames_260512_092035",
+  "merged_pkg_name": "Drosophila_TRAIN_set_setB_993frames.pkg.slp",
+  "val_pkg_name": "Drosophila_VAL_set_setB.pkg.slp",
+  "test_pkg_name": "Drosophila_TEST_set_setB.pkg.slp",
+  "base_ckpt_name": "best_ft_base.ckpt",
+  "yaml_name": "single_instance_ft.yaml",
+  "n_frames": 993,
+  "base_model_name": "drosophila_convnext_pt_setB_260408_085648"
+}

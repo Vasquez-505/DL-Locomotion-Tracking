@@ -1,0 +1,17 @@
+Metric,Base,Fine-tuned,Delta,Result
+Avg dist (px),1.631,1.631,0.0000,✗ Worse
+p50 dist (px),1.413,1.413,0.0000,✗ Worse
+p90 dist (px),2.519,2.519,0.0000,✗ Worse
+mOKS,0.826,0.826,0.0000,✓ Better
+mAP,0.649,0.649,0.0000,✓ Better
+mAR,0.703,0.703,0.0000,✓ Better
+mPCK,0.594,0.594,0.0000,✓ Better
+PCK@5px,0.659,0.659,0.0000,✓ Better
+Vis Precision,0.932,0.932,0.0000,✓ Better
+Vis Recall,0.990,0.990,0.0000,✓ Better
+FP rate (%),14.826,14.826,0.0000,✗ Worse
+FN rate (%),0.987,0.987,0.0000,✗ Worse
+CR_frame (%),37.607,37.607,0.0000,✗ Worse
+MPE px,1.679,1.679,0.0000,✗ Worse
+TD px/fr,2.225,2.225,0.0000,✗ Worse
+CR_kp %,6.268,6.268,0.0000,✗ Worse

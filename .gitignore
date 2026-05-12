@@ -1,0 +1,69 @@
+# =============================================================================
+#  .gitignore — Drosophila Leg Tracking Thesis
+#  KEPT:   all code (.py, .ipynb, .m), configs (.yaml, .json), small CSVs,
+#          label-only .slp files (TRAIN/VAL/TEST), CLAUDE.md, requirements
+#  EXCLUDED: videos, images/plots, model weights, embedded SLP, outputs
+# =============================================================================
+
+# ── Videos ───────────────────────────────────────────────────────────────────
+*.avi
+*.mp4
+*.mov
+*.mkv
+Inference_Pipeline/Videos/
+
+# ── Images & generated plots ──────────────────────────────────────────────────
+# Exception: gui/assets/ logos are needed by the Streamlit UI
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tif
+*.tiff
+!gui/assets/*.png
+!gui/assets/*.jpg
+
+# ── Embedded SLP files (video frames baked in — 100 MB+) ─────────────────────
+*.pkg.slp
+*_embedded.pkg.slp
+
+# ── Model weights (50–200 MB each — keep on Google Drive / Colab) ─────────────
+*.ckpt
+*.pt
+*.pth
+Inference_Pipeline/Models/VS Code Models/
+
+# ── Generated evaluation SLP files inside model folders ──────────────────────
+Inference_Pipeline/Models/SLEAP_Models/*/labels_gt.*.slp
+Inference_Pipeline/Models/SLEAP_Models/*/labels_pr.*.slp
+
+# ── Binary metrics files (generated, can be regenerated from eval) ────────────
+*.npz
+
+# ── Per-run pipeline outputs ──────────────────────────────────────────────────
+Inference_Pipeline/Predictions/
+*.analysis.h5
+*.TRACKS.mat
+*.predictions.slp
+*.pre_trim.slp
+
+# ── SLEAP / Colab upload packages ─────────────────────────────────────────────
+*.zip
+colab_upload.zip
+
+# ── Auto-generated fine-tune configs (machine-specific paths) ─────────────────
+single_instance_ft.yaml
+*_ft.yaml
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# ── OS / editor artefacts ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+desktop.ini

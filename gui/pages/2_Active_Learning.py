@@ -736,7 +736,7 @@ else:
             )
             for _f in _files:
                 _size            = _f.stat().st_size if _f.is_file() else None
-                _label, _col     = _KEY_FILES.get(_f.name, (_f.name, "#4b5563"))
+                _label, _col     = _KEY_FILES.get(_f.name, (_f.name, MUTED))
                 _size_str = (
                     f"{_size/1e6:.1f} MB" if _size and _size >= 1e6 else
                     f"{_size/1e3:.0f} KB" if _size and _size >= 1e3 else
@@ -746,7 +746,7 @@ else:
                     f'<div style="display:flex;justify-content:space-between;'
                     f'padding:3px 0;border-bottom:1px solid {AMBER}15">'
                     f'<span style="color:{_col};font-size:0.82em">{_html.escape(_f.name)}</span>'
-                    f'<span style="color:#4b5563;font-size:0.78em">{_size_str}</span>'
+                    f'<span style="color:{MUTED};font-size:0.78em">{_size_str}</span>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -782,7 +782,7 @@ else:
                         st.markdown(
                             f'<div style="display:flex;justify-content:space-between;'
                             f'padding:2px 0;border-bottom:1px solid {AMBER}10">'
-                            f'<span style="color:#4b5563;font-size:0.76em">Epoch {_html.escape(str(_ep))}</span>'
+                            f'<span style="color:{MUTED};font-size:0.76em">Epoch {_html.escape(str(_ep))}</span>'
                             f'<span style="color:{MUTED};font-size:0.76em">{_right}</span>'
                             f'</div>',
                             unsafe_allow_html=True,
@@ -796,43 +796,16 @@ else:
         _has_any_eval = (_mdir / "eval_kp_metrics_val.png").exists()
 
         def _safe_image(path, **kwargs):
-            """Embed image as a base64 data-URL inside st.markdown.
-
-            Bypasses Streamlit's media-URL system entirely — st.image(bytes) still
-            routes through Streamlit's URL cache (same filename → same URL → browser
-            serves the old model's cached image). A data-URL has no path component so
-            the browser never caches it; switching models always shows fresh content.
+            """Display image via st.image(bytes) — bytes are hashed by Streamlit to
+            generate a unique URL per content, so switching models always shows the
+            new model's plots even when filenames are identical.  st.image() also
+            provides the native Streamlit expand button (click to fullscreen).
             """
             try:
-                from PIL import Image as _PILImage
-                import io as _io, base64 as _b64mod
                 _caption = kwargs.pop("caption", None)
                 _ucw     = kwargs.pop("use_container_width", True)
-                _img = _PILImage.open(str(path))
-                _buf = _io.BytesIO()
-                _img.save(_buf, format="PNG")
-                _enc = _b64mod.b64encode(_buf.getvalue()).decode("ascii")
-                _w   = "width:100%" if _ucw else "max-width:100%"
-                _expand = (
-                    '<div class="ft-img-btn" role="button" aria-label="Expand image">'
-                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13"'
-                    ' fill="none" stroke="currentColor" stroke-width="2.5"'
-                    ' stroke-linecap="round" stroke-linejoin="round">'
-                    '<polyline points="15 3 21 3 21 9"/>'
-                    '<polyline points="9 21 3 21 3 15"/>'
-                    '<line x1="21" y1="3" x2="14" y2="10"/>'
-                    '<line x1="3" y1="21" x2="10" y2="14"/>'
-                    '</svg></div>'
-                )
-                _out = (f'<div class="ft-img-wrap">'
-                        f'<img src="data:image/png;base64,{_enc}" class="ft-zoomable" style="{_w}" />'
-                        f'{_expand}'
-                        f'</div>')
-                if _caption:
-                    _out += (f'<p style="color:{MUTED};font-size:0.80em;'
-                             f'text-align:center;margin:4px 0 12px">'
-                             f'{_html.escape(str(_caption))}</p>')
-                st.markdown(_out, unsafe_allow_html=True)
+                _bytes   = path.read_bytes()
+                st.image(_bytes, use_container_width=_ucw, caption=_caption)
             except Exception as _img_err:
                 st.warning(f"`{path.name}` could not be displayed ({_img_err}). "
                            "Regenerate evaluation to rebuild it.")

@@ -89,20 +89,16 @@ def _poll_inner(key: str):
         st.rerun()
 
 
-@st.fragment(run_every=1.0)
-def _s1_log():  _poll_inner("s1")
-
-@st.fragment(run_every=1.0)
-def _ph4_log(): _poll_inner("ph4")
-
-@st.fragment(run_every=1.0)
-def _ph5_log(): _poll_inner("ph5")
-
-@st.fragment(run_every=1.0)
-def _ph6_log(): _poll_inner("ph6")
-
-@st.fragment(run_every=1.0)
-def _s3_log():  _poll_inner("s3")
+def _render_run_stop(key: str, run_label: str, on_run):
+    """Render run/stop button inline; calls on_run() on run click."""
+    status = _state(f"{key}_status", "idle")
+    if status == "running":
+        if st.button("■  Stop", key=f"btn_{key}_stop"):
+            stop_phase(key)
+            st.rerun()
+    else:
+        if st.button(run_label, key=f"btn_{key}"):
+            on_run()
 
 
 # ── detect available videos / models ─────────────────────────────────────────
@@ -176,6 +172,17 @@ with st.sidebar:
             key="bp_model_name_fb",
         )
 
+    _fps_raw = st.text_input(
+        "Frame rate (FPS)",
+        value=str(st.session_state.get("bp_fps", 250)),
+        key="bp_fps_str",
+    )
+    try:
+        fps = max(1, int(_fps_raw))
+    except (ValueError, TypeError):
+        fps = 250
+    st.session_state["bp_fps"] = fps
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION 1 — DL Model Inference (Phases 1–3)
@@ -195,7 +202,7 @@ with st.expander("What this does", expanded=False):
         **Phase 1** — Background subtraction for every video:
         raw PNGs → Set B (hot colourmap) + Set C (no colourmap) + Set D (raw).
 
-        **Phase 2** — PNG sets → lossless AVI (FFV1 codec, 250 FPS).
+        **Phase 2** — PNG sets → lossless AVI (FFV1 codec, configurable FPS set in the sidebar).
 
         **Phase 3** — SLEAP `sleap-nn track` or ADPT `inference.py` →
         `.predictions.slp` per video, relinked to Set B for SLEAP GUI display.
@@ -228,33 +235,32 @@ else:
     video_names_inf = [v.strip() for v in _txt.splitlines() if v.strip()]
 st.caption(f"{len(video_names_inf)} video(s) selected")
 
-_s1_log()
-run_s1 = stop_s1 = False
-if _s1_status == "running":
-    stop_s1 = st.button("■  Stop", key="btn_s1_stop")
-else:
-    run_s1 = st.button("▶  Run Section 1", key="btn_s1")
-
-if run_s1:
+def _s1_on_run():
     if not video_names_inf:
         st.warning("Add at least one video name.")
-    else:
-        flags = {
-            "VIDEO_FOLDER_NAMES_INF": video_names_inf,
-            "INFERENCE_MODEL": inference_model,
-            "VIDEO_SET": video_set,
-            "MODEL_NAME": model_name,
-        }
-        try:
-            script = nb_utils.bulk_section1_script(BULK_NB, flags)
-            start_phase("s1", script)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Could not build script: {e}")
+        return
+    flags = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+    }
+    try:
+        script = nb_utils.bulk_section1_script(BULK_NB, flags)
+        start_phase("s1", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
 
-if stop_s1:
-    stop_phase("s1")
-    st.rerun()
+
+@st.fragment(run_every=1.0)
+def _s1_block():
+    _poll_inner("s1")
+    _render_run_stop("s1", "▶  Run Section 1", _s1_on_run)
+
+
+_s1_block()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -291,6 +297,9 @@ with st.expander("Instructions", expanded=False):
 
         **FlyWalker requires:** ≥ 4 distinct contact events per leg,
         both L/R sides detected at least once, ≥ 1 tripod stance frame.
+
+        **Tip — trimming frames in SLEAP:** navigate to the desired frame →
+        **Ctrl+Fn+J** to select the interval to keep → **Labels → Custom Instance Delete**.
         """
     )
 
@@ -306,33 +315,32 @@ else:
     )
     videos_ana = [v.strip() for v in videos_ana_raw.splitlines() if v.strip()]
 
-_ph4_log()
-run_ph4 = stop_ph4 = False
-if _ph4_status == "running":
-    stop_ph4 = st.button("■  Stop", key="btn_ph4_stop")
-else:
-    run_ph4 = st.button("▶  Open SLEAP GUIs", key="btn_ph4")
-
-if run_ph4:
+def _ph4_on_run():
     if not videos_ana:
         st.warning("Select at least one video.")
-    else:
-        flags_a = {
-            "VIDEO_FOLDER_NAMES_INF": video_names_inf,
-            "INFERENCE_MODEL": inference_model,
-            "VIDEO_SET": video_set,
-            "MODEL_NAME": model_name,
-        }
-        try:
-            script = nb_utils.bulk_phase4_script(BULK_NB, flags_a, videos_ana)
-            start_phase("ph4", script)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Could not build script: {e}")
+        return
+    flags_a = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+    }
+    try:
+        script = nb_utils.bulk_phase4_script(BULK_NB, flags_a, videos_ana)
+        start_phase("ph4", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
 
-if stop_ph4:
-    stop_phase("ph4")
-    st.rerun()
+
+@st.fragment(run_every=1.0)
+def _ph4_block():
+    _poll_inner("ph4")
+    _render_run_stop("ph4", "▶  Open SLEAP GUIs", _ph4_on_run)
+
+
+_ph4_block()
 
 # ── Phase 5 — Trim tail frames ────────────────────────────────────────────────
 _ph5_status = _state("ph5_status", "idle")
@@ -340,51 +348,77 @@ st.markdown(
     phase_label(TEAL, "5", "Trim Tail Frames", f"optional &nbsp;·&nbsp; {status_dot(_ph5_status, TEAL)}"),
     unsafe_allow_html=True,
 )
-st.markdown(
-    f'<p style="color:{MUTED};font-size:0.83em;margin-bottom:8px">'
-    f'Remove trailing frames where the fly stopped. Enter the last frame to keep (1-based) per video.</p>',
-    unsafe_allow_html=True,
-)
+with st.expander("How trimming works", expanded=False):
+    st.markdown(
+        """
+        Remove frames where the fly stopped walking — FlyWalker needs continuous locomotion.
+        Enter the interval of frames to **keep** per video (0 = keep all).
+
+        **Tip — trim directly in SLEAP instead (Phase 4):** navigate to the desired frame →
+        **Ctrl+Fn+J** to select the interval to keep → **Labels → Custom Instance Delete**.
+        This avoids re-exporting and is faster for small adjustments.
+        """
+    )
 
 _trim_options = detected_videos() or list(dict.fromkeys(videos_ana + video_names_inf))
 trim_vids = st.multiselect(
     "Videos to trim", options=_trim_options,
     default=[v for v in videos_ana if v in _trim_options], key="bp_trim_vids",
 )
-trim_data = {}
+
+TRIM_START: dict[str, int] = {}
+TRIM_END: dict[str, int] = {}
 for vfn in trim_vids:
-    n = st.number_input(
-        f"{vfn} — keep up to frame", min_value=1, max_value=10000, value=200, step=1, key=f"trim_{vfn}",
-    )
-    trim_data[vfn] = int(n)
+    st.markdown(f"**{vfn}**")
+    _c1, _c2 = st.columns([1, 1])
+    with _c1:
+        _start = st.number_input(
+            "Keep from frame",
+            min_value=0,
+            value=st.session_state.get(f"trim_start_{vfn}", 0),
+            step=1,
+            key=f"trim_start_{vfn}",
+        )
+    with _c2:
+        _end = st.number_input(
+            "Keep until frame (0 = keep all)",
+            min_value=0,
+            value=st.session_state.get(f"trim_{vfn}", 0),
+            step=1,
+            key=f"trim_{vfn}",
+        )
+    TRIM_START[vfn] = int(_start)
+    TRIM_END[vfn] = int(_end)
 
-_ph5_log()
-run_ph5 = stop_ph5 = False
-if _ph5_status == "running":
-    stop_ph5 = st.button("■  Stop", key="btn_ph5_stop")
-else:
-    run_ph5 = st.button("▶  Trim Frames", key="btn_ph5")
-
-if run_ph5:
+def _ph5_on_run():
     if not trim_vids:
         st.warning("Select at least one video to trim.")
-    else:
-        flags_a = {
-            "VIDEO_FOLDER_NAMES_INF": video_names_inf,
-            "INFERENCE_MODEL": inference_model,
-            "VIDEO_SET": video_set,
-            "MODEL_NAME": model_name,
-        }
-        try:
-            script = nb_utils.bulk_trim_script(BULK_NB, flags_a, trim_data)
-            start_phase("ph5", script)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Could not build script: {e}")
+        return
+    flags_a = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+        "TRIM_START": TRIM_START,
+        "TRIM_END": TRIM_END,
+        "TRIM_FRAMES": TRIM_END,
+    }
+    try:
+        script = nb_utils.bulk_trim_script(BULK_NB, flags_a, TRIM_END)
+        start_phase("ph5", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
 
-if stop_ph5:
-    stop_phase("ph5")
-    st.rerun()
+
+@st.fragment(run_every=1.0)
+def _ph5_block():
+    _poll_inner("ph5")
+    _render_run_stop("ph5", "▶  Trim Frames", _ph5_on_run)
+
+
+_ph5_block()
 
 
 # ── FLAGS B — videos for Phase 6 and Section 3 ───────────────────────────────
@@ -428,33 +462,32 @@ with st.expander("What this checks", expanded=False):
         """
     )
 
-_ph6_log()
-run_ph6 = stop_ph6 = False
-if _ph6_status == "running":
-    stop_ph6 = st.button("■  Stop", key="btn_ph6_stop")
-else:
-    run_ph6 = st.button("▶  Run Pre-flight Validation", key="btn_ph6")
-
-if run_ph6:
+def _ph6_on_run():
     if not videos_c:
         st.warning("Select at least one video.")
-    else:
-        flags_a = {
-            "VIDEO_FOLDER_NAMES_INF": video_names_inf,
-            "INFERENCE_MODEL": inference_model,
-            "VIDEO_SET": video_set,
-            "MODEL_NAME": model_name,
-        }
-        try:
-            script = nb_utils.bulk_preflight_script(BULK_NB, flags_a, videos_c)
-            start_phase("ph6", script)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Could not build script: {e}")
+        return
+    flags_a = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+    }
+    try:
+        script = nb_utils.bulk_preflight_script(BULK_NB, flags_a, videos_c)
+        start_phase("ph6", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
 
-if stop_ph6:
-    stop_phase("ph6")
-    st.rerun()
+
+@st.fragment(run_every=1.0)
+def _ph6_block():
+    _poll_inner("ph6")
+    _render_run_stop("ph6", "▶  Run Pre-flight Validation", _ph6_on_run)
+
+
+_ph6_block()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -481,39 +514,49 @@ with st.expander("What this does", expanded=False):
 
         **Phase 10** — Launch FlyWalker MATLAB analysis → graphs + `ResultSummary.xlsx`.
         If MATLAB headless launch fails, a `_run_flywalker.m` script is written for manual execution.
-
-        > **Note:** `ResultSummary.xlsx` may not be saved on MATLAB R2025b+ due to a
-        > known COM API incompatibility. All `.fig` plots are saved regardless.
         """
     )
 
-_s3_log()
-run_s3 = stop_s3 = False
-if _s3_status == "running":
-    stop_s3 = st.button("■  Stop", key="btn_s3_stop")
-else:
-    run_s3 = st.button("▶  Run Section 3", key="btn_s3")
+with st.expander("Pixel calibration (µm/px)", expanded=False):
+    st.caption("Default 68.7 µm/px for Sets B/C/D. Enter the number of micrometres per pixel.")
+    for vname in videos_c:
+        _dkey = f"distcal_{vname}"
+        _dval = st.session_state.get(_dkey, 68.7)
+        st.number_input(
+            f"{vname}", min_value=0.1, max_value=1000.0,
+            value=_dval, step=0.1, key=_dkey,
+            format="%.1f", label_visibility="visible",
+        )
 
-if run_s3:
+DISTCAL_MAP = {vname: st.session_state.get(f"distcal_{vname}", 68.7) for vname in videos_c}
+
+def _s3_on_run():
     if not videos_c:
         st.warning("Select at least one video for analysis.")
-    else:
-        flags_a = {
-            "VIDEO_FOLDER_NAMES_INF": video_names_inf,
-            "INFERENCE_MODEL": inference_model,
-            "VIDEO_SET": video_set,
-            "MODEL_NAME": model_name,
-        }
-        try:
-            script = nb_utils.bulk_section3_script(BULK_NB, flags_a, videos_c)
-            start_phase("s3", script)
-            st.rerun()
-        except Exception as e:
-            st.error(f"Could not build script: {e}")
+        return
+    flags_a = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+        "DISTCAL_MAP": DISTCAL_MAP,
+    }
+    try:
+        script = nb_utils.bulk_section3_script(BULK_NB, flags_a, videos_c)
+        start_phase("s3", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
 
-if stop_s3:
-    stop_phase("s3")
-    st.rerun()
+
+@st.fragment(run_every=1.0)
+def _s3_block():
+    _poll_inner("s3")
+    _render_run_stop("s3", "▶  Run Section 3", _s3_on_run)
+
+
+_s3_block()
 
 
 # ── Output reference ──────────────────────────────────────────────────────────
@@ -528,7 +571,7 @@ with st.expander("Output files reference", expanded=False):
         | `<name>.analysis.h5` | SLEAP analysis HDF5 |
         | `TRACKS.mat` | FlyWalker input (MATLAB struct) |
         | `FlyWalker_<name>/` | FlyWalker output graphs (`.fig`) |
-        | `ResultSummary.xlsx` | FlyWalker results table (may fail on R2025b+) |
+        | `ResultSummary.xlsx` | FlyWalker results table |
         | `_run_flywalker.m` | Manual MATLAB script (fallback) |
         """
     )

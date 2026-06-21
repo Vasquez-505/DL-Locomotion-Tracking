@@ -184,16 +184,23 @@ def _strip_var_block(src: str, var_name: str) -> str:
     return "".join(result)
 
 
-def bulk_trim_script(nb_path: Path, flags_a: dict, trim_frames: dict) -> Path:
-    """Phase 4.4: trim tail frames."""
+def bulk_trim_script(nb_path: Path, flags_a: dict, trim_frames: dict = None) -> Path:
+    """Phase 4.4: trim to a frame interval [TRIM_START, TRIM_END].
+
+    ``trim_frames`` is accepted for backward compatibility but ignored — the GUI
+    now passes ``TRIM_START`` and ``TRIM_END`` dicts via ``flags_a``.
+    """
     cells = get_cells(nb_path)
     _, flags_src  = find_cell(cells, "FLAGS A")
-    # Use TRIM_FRAMES (unique to the trim cell, not mentioned in Phase 4 cell)
-    _, trim_src   = find_cell(cells, "TRIM_FRAMES = {")
-    # Strip the notebook's hardcoded TRIM_FRAMES block — GUI injects the real value
-    trim_src = _strip_var_block(trim_src, "TRIM_FRAMES")
+    # Locate the trim cell by its TRIM_END marker (unique to that cell)
+    _, trim_src   = find_cell(cells, "TRIM_END = {")
+    # Strip the notebook's hardcoded TRIM_START / TRIM_END blocks — GUI injects them
+    trim_src = _strip_var_block(trim_src, "TRIM_START")
+    trim_src = _strip_var_block(trim_src, "TRIM_END")
     helpers = extract_helpers(flags_src)
-    merged_flags = {**flags_a, "TRIM_FRAMES": trim_frames}
+    trim_start = flags_a.get("TRIM_START", {}) if isinstance(flags_a, dict) else {}
+    trim_end   = flags_a.get("TRIM_END",   {}) if isinstance(flags_a, dict) else {}
+    merged_flags = {**flags_a, "TRIM_START": trim_start, "TRIM_END": trim_end}
     script = build_script(merged_flags, helpers, [trim_src])
     return write_temp_script(script)
 
@@ -255,13 +262,15 @@ def al_step2_script(nb_path: Path, flags: dict) -> Path:
 
 
 def al_step3_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 3: build fine-tune config YAML."""
+    """Step 3: build fine-tune config YAML.
+
+    Steps 1 & 2 outputs are loaded from .al_run_state.json by the target cell
+    itself — no need to re-execute them here.
+    """
     nb_flags, cells = _al_nb_flags(nb_path)
-    _, s1 = find_cell(cells, "Auto-patch")
-    _, s2 = find_cell(cells, "MERGED_SLP")
     _, s3 = find_cell(cells, "single_instance_ft")
     merged = {**flags, "RUN_NAME": run_name}
-    script = build_script_with_override(nb_flags, merged, [s1, s2, s3])
+    script = build_script_with_override(nb_flags, merged, [s3])
     return write_temp_script(script)
 
 
@@ -275,26 +284,28 @@ def al_step35_script(nb_path: Path, flags: dict, run_name: str) -> Path:
 
 
 def al_step4_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 4: train locally or prepare Colab zip."""
+    """Step 4: train locally or prepare Colab zip.
+
+    Steps 1, 2, 3 outputs are loaded from .al_run_state.json by the target cell
+    itself — no need to re-execute them here.
+    """
     nb_flags, cells = _al_nb_flags(nb_path)
-    _, s1 = find_cell(cells, "Auto-patch")
-    _, s2 = find_cell(cells, "MERGED_SLP")
-    _, s3 = find_cell(cells, "single_instance_ft")
     _, s4 = find_cell(cells, "sleap_nn.cli")
     merged = {**flags, "RUN_NAME": run_name}
-    script = build_script_with_override(nb_flags, merged, [s1, s2, s3, s4])
+    script = build_script_with_override(nb_flags, merged, [s4])
     return write_temp_script(script)
 
 
 def al_step5_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 5: evaluate & compare results."""
+    """Step 5: evaluate & compare results.
+
+    Steps 1, 2, 3 outputs are loaded from .al_run_state.json by the target cell
+    itself — no need to re-execute them here.
+    """
     nb_flags, cells = _al_nb_flags(nb_path)
-    _, s1 = find_cell(cells, "Auto-patch")
-    _, s2 = find_cell(cells, "MERGED_SLP")
-    _, s3 = find_cell(cells, "single_instance_ft")
     _, s5 = find_cell(cells, "eval_model")
     merged = {**flags, "RUN_NAME": run_name}
-    script = build_script_with_override(nb_flags, merged, [s1, s2, s3, s5])
+    script = build_script_with_override(nb_flags, merged, [s5])
     return write_temp_script(script)
 
 

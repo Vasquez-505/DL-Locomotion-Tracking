@@ -3902,6 +3902,7 @@ set(ActivesheetRange, 'Value', Data);
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 % Whole FlyTable Information sheet
+try
   disp('  12.Full Data');
   Data = num2cell(FlyTable');
   Data(2:end+1,:) = Data;
@@ -3938,11 +3939,15 @@ set(ActivesheetRange, 'Value', Data);
 
 % xlswrite([foldername ExcelFileName '.xlsx'], Data,'12.Full Data');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet12_err
+    disp(['  Sheet 12 (Full Data) failed (non-critical): ' sheet12_err.message]);
+end
 
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 % calculate phases ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+try
   disp('  13.Step_stat.');
     % extract fore and hind step times
       LeftForeStepTimes    = time(StopStep(1,1:StepCounter(1)));
@@ -4164,6 +4169,9 @@ set(ActivesheetRange, 'Value', DataCell);
 
 % xlswrite([foldername ExcelFileName '.xlsx'], DataCell,'13.Step_stat.');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet13_err
+    disp(['  Sheet 13 (Step_stat) failed (non-critical): ' sheet13_err.message]);
+end
 
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
@@ -4198,6 +4206,7 @@ set(ActivesheetRange, 'Value', DataCell);
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 % Leg alignment info
+try
   disp('  15.Leg_alignment');  
   Data = [LeftLegSTD; LFLMParaDist; LFLHParaDist; RightLegSTD; RFRMParaDist; RFRHParaDist];
   DataCell = num2cell(Data');
@@ -4232,13 +4241,17 @@ set(ActivesheetRange, 'Value', DataCell);
   
 % xlswrite([foldername ExcelFileName '.xlsx'], DataCell,'15.Leg_alignment');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
+catch sheet15_err
+    disp(['  Sheet 15 (Leg_alignment) failed (non-critical): ' sheet15_err.message]);
+end
+
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 
 
 % 16 - AEP_PP
+try
   disp('  16.AEP_PEP');
   clear DataCell;
   DataCell(1,:) = {'LF AEP(x)'	'LF AEP(y)'	'RF AEP(x)'	'RF AEP(y)' 'LM AEP(x)' 'LM AEP(y)' 'RM AEP(x)' 'RM AEP(y)' 'LH AEP(x)' 'LH AEP(y)' 'RH AEP(x)' 'RH AEP(y)' 'LF PEP(x)' 'LF PEP(y)' 'RF PEP(x)' 'RF PEP(y)' 'LM PEP(x)' 'LM PEP(y)' 'RM PEP(x)' 'RM PEP(y)' 'LH PEP(x)' 'LH PEP(y)' 'RH PEP(x)' 'RH PEP(y)'};
@@ -4310,12 +4323,16 @@ set(ActivesheetRange, 'Value', DataCell);
   
 % xlswrite([foldername ExcelFileName '.xlsx'], DataCell,'16.AEP_PEP');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet16_err
+    disp(['  Sheet 16 (AEP_PEP) failed (non-critical): ' sheet16_err.message]);
+end
 
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 
 % Output TimeBetweenTripods in separate sheet
+try
   disp('  17.Tripod');
   clear DataCell;
   DataCell(1,:) = {'Tripod start'	'Tripod end'	'Tripod duration'	'Inter-tripod duration'};
@@ -4352,6 +4369,9 @@ set(ActivesheetRange, 'Value', DataCell);
   
 % xlswrite([foldername ExcelFileName '.xlsx'], DataCell,'17.Tripod');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet17_err
+    disp(['  Sheet 17 (Tripod) failed (non-critical): ' sheet17_err.message]);
+end
 
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
@@ -4362,6 +4382,7 @@ set(ActivesheetRange, 'Value', DataCell);
 % of the displacement that occurs over a particular stance trace and the
 % "path length" of that stance trace from frame to frame
 
+try
   disp('  18.Stance Straightness Index');
 
 %calculate the displacement (in um???) from the start to the end of a stance trace
@@ -4491,17 +4512,21 @@ set(ActivesheetRange, 'Value', Data);
 % %write out to excel
 % xlswrite([foldername ExcelFileName '.xlsx'], Data,'18.Stance_Straightness_Index');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet18_err
+    disp(['  Sheet 18 (Stance Straightness) failed (non-critical): ' sheet18_err.message]);
+end
 
 % check for ABORT
   if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Alexandre
-% Displacement ratio: this parameter serves as a measure of the overall 
-% straightness of the fly's path. It is defined as the ratio between the 
-% total (cumulative) distance travelled and the distance between 
+% Displacement ratio: this parameter serves as a measure of the overall
+% straightness of the fly's path. It is defined as the ratio between the
+% total (cumulative) distance travelled and the distance between
 % the starting and finishing positions.
 
+try
 disp ('  19. Body track straightness')
 
 % % if the  body determination is front based, use values stored in TCx/TCy
@@ -4589,6 +4614,9 @@ set(ActivesheetRange, 'Value', Data_cell);
 % write out to excel
 % xlswrite([foldername ExcelFileName '.xlsx'], Data_cell,'19.Displacement_ratio');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+catch sheet19_err
+    disp(['  Sheet 19 (Body track straightness) failed (non-critical): ' sheet19_err.message]);
+end
 
 % check for ABORT
 if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
@@ -4600,6 +4628,9 @@ if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,
 % area, stability_ratio and whether or not the centroid is located on the
 % outside of the plotted polygon (i.e., check if the fly is stable or not)
 
+% Sheet 20 wrapped — if Triangles data indexing fails for this video,
+% sheets 1-19 are still saved cleanly.
+try
 disp ('  20. Triangles')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -4800,12 +4831,28 @@ sheet.Range('R19').Value = num2str((three_point_sum+four_point_sum)/(three_point
 sheet.Range('H1').Value = {'1'};
 sheet.Range('H1').Font.ColorIndex = 2;
 
+catch sheet20_err
+    disp(['  Sheet 20 (Triangles) failed (non-critical, sheets 1-19 complete): ' sheet20_err.message]);
+end
+
 % check for ABORT
 if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,'Value') == 0; return; end;
 
+% Save the 20 sheets to disk NOW before OTHERS runs — so the file exists
+% even if the OTHERS summary section crashes below.
+% _new suffix avoids locking conflicts with any file left from a prior run.
+% Backslashes required for COM SaveAs on Windows; FileFormat 51 = xlOpenXMLWorkbook (.xlsx).
+output_file_name_excel = strrep([foldername ExcelFileName '_new.xlsx'], '/', '\');
+final_excel_file       = strrep([foldername ExcelFileName '.xlsx'],     '/', '\');
+try; delete(output_file_name_excel); catch; end
+exlFile.SaveAs(output_file_name_excel, 51);
+disp('  20 sheets saved to disk.');
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% OTHER
+% OTHER — non-critical summary additions; wrapped so a crash here does not
+% lose the already-saved 20-sheet file.
+try
   disp('  OTHERS');
   %on sheet 1 Info sheet:
  %Cesar did this 
@@ -5269,20 +5316,30 @@ sheet = get(sheets, 'Item', 1);
 invoke(sheet, 'Activate');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% now save the workbook
-% invoke(exlFile, 'SaveAs', [foldername ExcelFileName '.xlsx']);
-output_file_name_excel = [foldername ExcelFileName '.xlsx'];
-% [foldername ExcelFileName '.xlsx'];
-exlFile.SaveAs(output_file_name_excel);
-% exlFile.Save;
+% Save again now that OTHERS has added its summary cells
+exlFile.SaveAs(output_file_name_excel, 51);
+
+catch others_err
+    disp(['  OTHERS section failed (non-critical, 20 sheets already saved): ' others_err.message]);
+end
+
 % quit exl
 exlFile.Close(false);
 invoke(exl, 'Quit');
 % end process
 delete(exl);
+% Rename _new.xlsx → final name now that COM has released all file locks
+try
+    try; delete(final_excel_file); catch; end
+    movefile(output_file_name_excel, final_excel_file);
+    disp(['  Excel saved: ' final_excel_file]);
+catch
+    disp(['  Excel saved (with _new suffix): ' output_file_name_excel]);
+end
 
 
 catch excel_err
+    disp(['  COM ERROR: ' excel_err.message]);
     warning('ExcelCOM:failed', 'Excel COM automation failed: %s', excel_err.message);
     disp('Falling back to writecell (no COM required, no formatting/cross-sheet formulas)...');
     % Clean up any partially-initialised COM object
@@ -5293,21 +5350,22 @@ catch excel_err
             try; delete(exl);           catch; end
         end
     catch; end
-    % Delete any partial file so writecell starts clean
-    try; delete(fb_excel_file); catch; end
+    % Use _fallback suffix to avoid locking conflict with any file left from a prior run
+    fb_excel_write_file = strrep(fb_excel_file, '.xlsx', '_fallback.xlsx');
+    try; delete(fb_excel_write_file); catch; end
     % Write the raw data sheets that were computed before the COM call
     try
-        writecell(fb_InfoData, fb_excel_file, 'Sheet', '1.Info_Sheet',  'Range', 'A1');
-        writematrix(fb_body,   fb_excel_file, 'Sheet', '3.Body',         'Range', 'A1');
-        writematrix(fb_LFData, fb_excel_file, 'Sheet', '4.LF',           'Range', 'A1');
-        writematrix(fb_LMData, fb_excel_file, 'Sheet', '5.LM',           'Range', 'A1');
-        writematrix(fb_LBData, fb_excel_file, 'Sheet', '6.LH',           'Range', 'A1');
-        writematrix(fb_RFData, fb_excel_file, 'Sheet', '7.RF',           'Range', 'A1');
-        writematrix(fb_RMData, fb_excel_file, 'Sheet', '8.RM',           'Range', 'A1');
-        writematrix(fb_RBData, fb_excel_file, 'Sheet', '9.RH',           'Range', 'A1');
-        if exist('FlyTable',   'var'), writematrix(FlyTable,   fb_excel_file, 'Sheet', '12.Full_Data',  'Range', 'A2'); end
-        if exist('tri_table',  'var'), writetable(tri_table,   fb_excel_file, 'Sheet', '20.Triangles'); end
-        disp(['Fallback Excel saved: ' fb_excel_file]);
+        writecell(fb_InfoData, fb_excel_write_file, 'Sheet', '1.Info_Sheet',  'Range', 'A1');
+        writematrix(fb_body,   fb_excel_write_file, 'Sheet', '3.Body',         'Range', 'A1');
+        writematrix(fb_LFData, fb_excel_write_file, 'Sheet', '4.LF',           'Range', 'A1');
+        writematrix(fb_LMData, fb_excel_write_file, 'Sheet', '5.LM',           'Range', 'A1');
+        writematrix(fb_LBData, fb_excel_write_file, 'Sheet', '6.LH',           'Range', 'A1');
+        writematrix(fb_RFData, fb_excel_write_file, 'Sheet', '7.RF',           'Range', 'A1');
+        writematrix(fb_RMData, fb_excel_write_file, 'Sheet', '8.RM',           'Range', 'A1');
+        writematrix(fb_RBData, fb_excel_write_file, 'Sheet', '9.RH',           'Range', 'A1');
+        if exist('FlyTable',   'var'), writematrix(FlyTable,   fb_excel_write_file, 'Sheet', '12.Full_Data',  'Range', 'A2'); end
+        if exist('tri_table',  'var'), writetable(tri_table,   fb_excel_write_file, 'Sheet', '20.Triangles'); end
+        disp(['Fallback Excel saved: ' fb_excel_write_file]);
     catch wb_err
         % writecell/writematrix not available (MATLAB < R2019b) or failed for another reason.
         % Last resort: save raw arrays as a .mat file — works on any MATLAB version.

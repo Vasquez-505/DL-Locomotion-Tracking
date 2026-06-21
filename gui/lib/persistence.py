@@ -14,7 +14,7 @@ _PERSIST_KEYS: frozenset[str] = frozenset({
     "bp_video_input_ms", "bp_video_input",
     "bp_videos_ana",    "bp_videos_ana_txt",
     "bp_videos_c",      "bp_videos_c_txt",
-    "bp_trim_vids",
+    "bp_trim_vids", "bp_fps",
     # Active Learning — sidebar
     "al_base_model", "al_new_videos_sel",
     # Active Learning — settings
@@ -44,6 +44,8 @@ def load(ss: dict) -> None:
             ss[k] = v
         elif k.startswith("trim_") and k not in ss and isinstance(v, (int, float)):
             ss[k] = v
+        elif k.startswith("distcal_") and k not in ss and isinstance(v, (int, float)):
+            ss[k] = v
 
 
 def save(ss: dict) -> None:
@@ -66,6 +68,10 @@ def save(ss: dict) -> None:
     # Dynamic per-video trim-frame keys (trim_<video_name>)
     for k, v in ss.items():
         if k.startswith("trim_") and isinstance(v, (int, float)):
+            current[k] = v
+
+    for k, v in ss.items():
+        if k.startswith("distcal_") and isinstance(v, (int, float)):
             current[k] = v
 
     try:

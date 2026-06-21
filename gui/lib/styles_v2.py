@@ -116,6 +116,10 @@ body::after {{
     padding-top:0 !important;padding-bottom:0 !important;border-radius:3px !important;
     border-color:rgba(255,255,255,0.15) !important;
 }}
+.stSidebar [data-testid="stTextInput"] [data-baseweb="input"]:focus-within {{
+    border-color:rgba(255,255,255,0.55) !important;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.10) !important;
+}}
 .stSidebar [data-testid="stTextInput"] input {{
     font-size:0.76em !important;padding-top:0 !important;padding-bottom:0 !important;
 }}
@@ -283,10 +287,18 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .stApp, [data-testid="stMain"], .stMainBlockContainer,
 [data-baseweb="input"], [data-baseweb="textarea"],
 [data-baseweb="select"] > div,
-[data-testid="stExpander"],
 [data-testid="stButton"] button {{ transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease !important; }}
 .ft-section-banner {{ transition: background-color 0.25s ease !important; }}
 .ft-sb-title, .ft-sb-sub, .ft-pl-name, .ft-pl-note {{ transition: color 0.25s ease !important; }}
+
+/* ── Prevent expander header flicker from fragment run_every polling ─────────── */
+[data-testid="stExpander"] details > summary,
+[data-testid="stExpander"] details > summary * {{
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transition: none !important;
+}}
 
 /* ── Logo swap: dark/light theme ─────────────────────────────────────────────── */
 .ft-logo-light {{ display:none !important; }}
@@ -467,11 +479,19 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     background-color:#ffffff !important;
     border-color:rgba(15,23,42,0.14) !important;
 }}
-.flytrack-light .stSidebar [data-testid="stTextInput"] [data-baseweb="input"] {{
+.flytrack-light .stSidebar [data-testid="stTextInput"] [data-baseweb="input"],
+.flytrack-light .stSidebar [data-testid="stTextInput"] [data-baseweb="base-input"] {{
     background-color:#ffffff !important;
     border-color:rgba(15,23,42,0.14) !important;
 }}
-.flytrack-light .stSidebar [data-testid="stTextInput"] input {{ color:#0f172a !important; }}
+.flytrack-light .stSidebar [data-testid="stTextInput"] [data-baseweb="input"]:focus-within {{
+    border-color:rgba(15,23,42,0.80) !important;
+    box-shadow:0 0 0 2px rgba(15,23,42,0.08) !important;
+}}
+.flytrack-light .stSidebar [data-testid="stTextInput"] input {{
+    color:#0f172a !important;
+    background-color:transparent !important;
+}}
 
 /* ── Top / header bar light ──────────────────────────────────────────────── */
 .flytrack-light [data-testid="stHeader"] {{
@@ -615,6 +635,13 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     color:rgba(15,23,42,0.60);
 }}
 .flytrack-light .ft-img-btn:hover {{ background:rgba(255,255,255,1) !important; color:rgba(15,23,42,0.90) !important; }}
+
+/* ── Compact number inputs (main content only — sidebar inputs match selectbox) */
+[data-testid="stMain"] [data-testid="stNumberInput"] label{{font-size:0.80em !important;margin-bottom:1px !important;line-height:1.2 !important;}}
+[data-testid="stMain"] [data-testid="stNumberInput"] [data-baseweb="input"]{{min-height:30px !important;height:30px !important;}}
+[data-testid="stMain"] [data-testid="stNumberInput"] input{{font-size:0.84em !important;padding:2px 8px !important;height:30px !important;}}
+[data-testid="stMain"] [data-testid="stNumberInput"]{{margin-bottom:4px !important;}}
+
 </style>
 """
 

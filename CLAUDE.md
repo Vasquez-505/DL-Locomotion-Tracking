@@ -71,7 +71,7 @@ Labels were created manually in **SLEAP** and saved as `.slp` files (HDF5 v0, SL
 
 ### File locations (on Pedro's Windows machine)
 
-All active SLEAP dataset files live in two locations:
+All active SLEAP dataset files live under `Inference_Pipeline/`:
 
 | File | Location |
 |------|----------|
@@ -79,10 +79,10 @@ All active SLEAP dataset files live in two locations:
 | TRAIN (test AL run, 1057 frames) | `Inference_Pipeline/SLEAP_Dataset/Drosophila_TRAIN_set_setB_1057frames.slp` + `.pkg.slp` |
 | VAL (120 frames) | `Inference_Pipeline/SLEAP_Dataset/Drosophila_VAL_set_setB.slp` + `.pkg.slp` |
 | TEST (117 frames) | `Inference_Pipeline/SLEAP_Dataset/Drosophila_TEST_set_setB.slp` + `.pkg.slp` |
-| TRAIN (Colab embedded) | `SLEAP_Training/Drosophila_TRAIN_set_setB_embedded.pkg.slp` |
-| VAL (Colab embedded) | `SLEAP_Training/Drosophila_VAL_set_setB_embedded.pkg.slp` |
 | Colab upload config | `Inference_Pipeline/SLEAP_Dataset/colab_config.json` |
 | Videos (Set B, active) | `Inference_Pipeline/Videos/PROCESSED_Colormap_Videos/` |
+
+No pre-embedded Set B `.pkg.slp` files currently exist on disk — see "Frame embedding for Colab" below.
 
 `colab_config.json` points to the 1057-frame set — this was a **test run** of the active learning pipeline, not the canonical TRAIN set. The current official TRAIN set is the 755-frame `Drosophila_TRAIN_set_setB.slp`.
 
@@ -194,7 +194,7 @@ Each model folder contains:
 - **Max epochs:** 200, min 200 steps/epoch
 - **Batch size:** 6 (TRAIN), 6 (VAL)
 - **Augmentation:** SLEAP default (enabled for TRAIN only)
-- **Training notebook:** `SLEAP_Training/Training_and_inference_using_Google_Drive.ipynb` (Colab)
+- **Training notebook:** `Inference_Pipeline/Training_and_inference_using_Google_Drive.ipynb` (Colab)
 
 ### Config reconstruction from checkpoint
 
@@ -267,7 +267,7 @@ The active learning loop uses corrected SLEAP predictions from previous inferenc
 
 - **Local fine-tune:** `Inference_Pipeline/Active_Learning.ipynb`
 - **Colab fine-tune:** `Inference_Pipeline/Active_Learning_Colab.ipynb`
-- **Full Colab training:** `SLEAP_Training/Training_and_inference_using_Google_Drive.ipynb`
+- **Full Colab training:** `Inference_Pipeline/Training_and_inference_using_Google_Drive.ipynb` (same file as above)
 
 ### Workflow
 
@@ -286,7 +286,7 @@ The active learning loop uses corrected SLEAP predictions from previous inferenc
 
 ### Frame embedding for Colab
 
-Colab cannot read local video files directly — frames must be embedded in the `.pkg.slp` file. `SLEAP_Training/embed_frames.py` handles this. Pre-embedded files exist for the base TRAIN/VAL sets in `SLEAP_Training/`.
+Colab cannot read local video files directly — frames must be embedded in the `.pkg.slp` file. `embed_frames.py` handles this, but currently only exists for the Set C/D prep datasets at `SLEAP_Extra_Datasets_C_&_D/embed_frames.py`. No pre-embedded Set B TRAIN/VAL files currently exist — re-run the embedding step before a fresh Colab upload of Set B data if needed.
 
 ---
 
@@ -361,7 +361,7 @@ Project root: C:\Users\pepev\Desktop\103665_THESIS_DL_Model\Model_Design_&_Train
 │   ├── Active_Learning.ipynb               ← local fine-tune notebook
 │   ├── Active_Learning_Colab.ipynb         ← Colab fine-tune notebook
 │   ├── Bulk_Pipeline.ipynb                 ← manual bulk pipeline notebook
-│   ├── Training_and_inference_using_Google_Drive.ipynb  ← Colab training (duplicate)
+│   ├── Training_and_inference_using_Google_Drive.ipynb  ← Colab training notebook
 │   ├── inference.py                        ← ADPT inference script
 │   ├── model.py                            ← ADPT model definition
 │   ├── requirements.txt
@@ -389,14 +389,17 @@ Project root: C:\Users\pepev\Desktop\103665_THESIS_DL_Model\Model_Design_&_Train
 │           ├── *.TRACKS.mat
 │           └── *.png (graphs)
 │
-└── SLEAP_Training\
-    ├── Training_and_inference_using_Google_Drive.ipynb  ← Colab training notebook
-    ├── embed_frames.py                     ← embed frames into .pkg.slp for Colab
-    ├── Drosophila_TRAIN_set_setB.slp + .pkg.slp
-    ├── Drosophila_TRAIN_set_setB_embedded.pkg.slp
-    ├── Drosophila_VAL_set_setB.slp + .pkg.slp
-    ├── Drosophila_VAL_set_setB_embedded.pkg.slp
-    └── Drosophila_TEST_set_setB.slp + .pkg.slp
+└── SLEAP_Extra_Datasets_C_&_D\             ← Set C/D dataset prep (different purpose, not used by current SLEAP models)
+    ├── SLEAP_Training_Plan.md
+    ├── create_scaled_slp.py
+    ├── embed_frames.py                     ← embeds frames into .pkg.slp for Colab (Set C/D only)
+    ├── model_results.md
+    ├── Drosophila_TRAIN_set_setC.slp + .pkg.slp
+    ├── Drosophila_VAL_set_setC.slp + .pkg.slp
+    ├── Drosophila_TEST_set_setC.slp + .pkg.slp
+    ├── Drosophila_TRAIN_set_setD.slp + .pkg.slp
+    ├── Drosophila_VAL_set_setD.slp + .pkg.slp
+    └── Drosophila_TEST_set_setD.slp + .pkg.slp
 ```
 
 ---

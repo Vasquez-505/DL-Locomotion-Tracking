@@ -61,6 +61,22 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 
+# ── Thesis writing ────────────────────────────────────────────────────────────
+Thesis_Report/
+SLEAP_Networks_Architecture.md
+SLEAP_Networks_Visual_Report.html
+NOVA_PC_SETUP_GUIDE.md
+
+# ── Scratch material (not part of the maintained codebase) ────────────────────
+Test_NOVA/
+
+# ── Logs ────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Machine-specific run/session state (absolute paths, local widget state) ──
+.al_run_state.json
+gui/.gui_state.json
+
 # ── OS / editor artefacts ─────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db

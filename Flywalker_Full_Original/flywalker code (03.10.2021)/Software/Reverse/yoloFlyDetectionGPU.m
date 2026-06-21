@@ -1,0 +1,135 @@
+function [positions] = yoloFlyDetectionGPU(srcDir, detector, rotation, maxAngDev, savefiles, curAngInit, dldialog)
+
+
+% this eventually needs to be adjusted for each dataset
+curAng = 0;
+
+if(savefiles)
+    mkdir('raw-images');
+end
+
+srcStruc = dir(fullfile(srcDir,'*.png'));
+
+if numel(srcStruc) < 1
+    srcStruc = dir(fullfile(srcDir,'*.jpg'));
+end
+if numel(srcStruc) == 0
+    disp("Error, images must either be in JPG or PNG format");
+    return;
+end
+
+centers = [];
+tproc = [];
+
+for k = 1:numel(srcStruc)
+    tic;
+    
+    filename = fullfile(srcDir,srcStruc(k).name);
+    [fPath, fName, fExt] = fileparts(filename);
+    disp(['[DL][' num2str(k) '/' num2str(numel(srcStruc)) '] Running deep learning eval for ' char(fName) char(fExt)]);
+    
+    
+    I = imread(filename);
+
+    % convert to 3 channel image
+    if(size(I,3) == 1)
+        I(:,:,2) = I(:,:);
+        I(:,:,3) = I(:,:,1);
+    end
+
+    if(size(I,1) < 90 | size(I,2) < 90)
+        resizeFactor = 2;
+        I = imresize(I, resizeFactor, 'bicubic');
+    else 
+        resizeFactor = 1;
+    end
+        
+    cx = ceil(size(I,2)/2);
+    cy = ceil(size(I,1)/2);
+                
+    
+    if(rotation)                
+        rotsMaxScore = -1;
+        rotsMaxAngle = curAng;
+        rotsMaxBBox = [];
+        Irotmax = I;
+        
+   
+        ang_aux = (curAng - maxAngDev):(curAng + maxAngDev);
+        for ang = ang_aux          
+            Irot = imrotate(I, ang, 'bicubic', 'crop');
+            
+            [bboxes,scores, labels] = detect(detector, Irot, 'Threshold', 0.33);
+            if length(scores) > 0
+                Irotdet = insertObjectAnnotation(Irot, 'rectangle', bboxes, scores, 'FontSize', 10);
+            end
+            [maxScore, maxScoreIndex] = max(scores); % para que � o max(scores)? se houver mais do que 1 score como funciona Irotdet linha anterior?
+                            
+            if(maxScore > rotsMaxScore)
+                rotsMaxScore = maxScore;
+                rotsMaxBBox = bboxes(maxScoreIndex,:); % tinha aqui um bug
+                rotsMaxAngle = ang;    
+                Irotmax = Irotdet;
+            end            
+        end
+%         
+        if(~isempty(rotsMaxBBox))
+
+             x_bbc_lin = rotsMaxBBox(:,1) + ceil(rotsMaxBBox(:,3)/2);
+             y_bbc_lin = rotsMaxBBox(:,2) + ceil(rotsMaxBBox(:,4)/2);
+
+             pt_x = cx + (x_bbc_lin - cx).*cosd(rotsMaxAngle) - (y_bbc_lin - cy).*sind(rotsMaxAngle);
+             pt_y = cy + (x_bbc_lin - cx).*sind(rotsMaxAngle) + (y_bbc_lin - cy).*cosd(rotsMaxAngle);
+
+             if(~isempty(centers))
+                last_c = centers(end);
+                [pt_x_min, ind] = min(abs(pt_x - last_c(1)));
+                
+                centers = [centers; [pt_x(ind) pt_y(ind)]];
+                
+                x1 = rotsMaxBBox(1,1);
+                y1 = rotsMaxBBox(1,2);
+                x2 = rotsMaxBBox(1,1) + rotsMaxBBox(1,3);
+                y2 = y1;
+                x3 = x2;
+                y3 = rotsMaxBBox(1,2) + rotsMaxBBox(1,4);
+                x4 = x1;
+                y4 = y3;
+                prot = [x1 y1; x2 y2; x3 y3; x4 y4];
+                rotcnt = [cx cy];
+                rmat = [cosd(-rotsMaxAngle) -sind(-rotsMaxAngle); sind(-rotsMaxAngle) cosd(-rotsMaxAngle)];
+
+                p = rotcnt + (prot - rotcnt)*rmat;
+                 
+                rf = resizeFactor;
+                positions(k,:) = [k rotsMaxAngle rotsMaxScore p(1,1)/rf p(1,2)/rf p(2,1)/rf p(2,2)/rf p(3,1)/rf p(3,2)/rf p(4,1)/rf p(4,2)/rf];
+                
+             else
+                centers = [centers; [pt_x(1) pt_y(1)]]; 
+                positions(k,:) = [k 0 -1 -1 -1 -1 -1 -1 -1 -1 -1];
+             end
+        else
+             positions(k,:) = [k 0 -1 -1 -1 -1 -1 -1 -1 -1 -1];
+
+             centers = [centers; [-1 -1]];
+        end
+        
+        Irotinv = imrotate(Irotmax, -rotsMaxAngle, 'bicubic', 'crop');
+
+        if(savefiles)
+            imnumber = sprintf('im_%0.4d.png', k);
+            imgfile = [pwd fs 'raw-images' fs imnumber];
+            imwrite(Irotinv + Iline, imgfile);
+        end
+        
+        curAng = rotsMaxAngle;          
+    end
+    
+    tproc(k) = toc;
+    dldialog.Value = k/numel(srcStruc);
+    secToFinish = round(median(tproc)*(numel(srcStruc)-k));
+    dldialog.Message = ['Estimating initial fly positions (' num2str(secToFinish) ' seconds to finish)'];
+
+end
+
+end

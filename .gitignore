@@ -1,8 +1,9 @@
 # =============================================================================
 #  .gitignore — Drosophila Leg Tracking Thesis
 #  KEPT:   all code (.py, .ipynb, .m), configs (.yaml, .json), small CSVs,
-#          label-only .slp files (TRAIN/VAL/TEST), CLAUDE.md, requirements
-#  EXCLUDED: videos, images/plots, model weights, embedded SLP, outputs
+#          label-only .slp files (TRAIN/VAL/TEST), requirements
+#  EXCLUDED: videos, images/plots, model weights, embedded SLP, outputs,
+#            local planning/instruction docs (CLAUDE.md, GUI_IMPROVEMENT_PLAN.md)
 # =============================================================================
 
 # ── Videos ───────────────────────────────────────────────────────────────────
@@ -84,6 +85,10 @@ gui/.gui_state.json
 # ── Local tool artefacts (MCP session logs, tool config) ─────────────────────
 .playwright-mcp/
 .mcp.json
+
+# ── Local planning/instruction docs (not published to GitHub) ────────────────
+CLAUDE.md
+GUI_IMPROVEMENT_PLAN.md
 
 # ── OS / editor artefacts ─────────────────────────────────────────────────────
 .DS_Store

@@ -1,4 +1,4 @@
-"""Dark Field Microscopy aesthetic — drop-in replacement for styles.py."""
+"""Dark Field Microscopy aesthetic: drop-in replacement for styles.py."""
 import html as _html_mod
 import re as _re
 import streamlit as st
@@ -71,7 +71,7 @@ body::after {{
 .stSidebar {{ background-color:{SURFACE};border-right:1px solid {BORDER}; }}
 .stMainBlockContainer {{ padding-top:2.5rem !important; }}
 
-/* ── Sidebar header — compress Streamlit's large default padding ─────────────── */
+/* ── Sidebar header: compress Streamlit's large default padding ─────────────── */
 [data-testid="stSidebarHeader"] {{
     padding-top:14px !important;
     padding-bottom:12px !important;
@@ -88,12 +88,12 @@ body::after {{
     margin-bottom:2px !important;opacity:0.75;
 }}
 
-/* ── Sidebar select border — applies to both selectbox and multiselect ────────── */
+/* ── Sidebar select border: applies to both selectbox and multiselect ────────── */
 .stSidebar [data-baseweb="select"] > div {{
     border-color:rgba(255,255,255,0.15) !important;border-radius:3px !important;
 }}
 .stSidebar [data-baseweb="select"] > div:focus-within {{ border-color:rgba(255,255,255,0.55) !important; box-shadow:0 0 0 1px rgba(255,255,255,0.10) !important; }}
-/* ── Sidebar SELECTBOX only — compact height, vertically centred, ellipsis ────── */
+/* ── Sidebar SELECTBOX only: compact height, vertically centred, ellipsis ────── */
 /* (multiselect is deliberately excluded so video tags are unaffected)            */
 .stSidebar [data-testid="stSelectbox"] [data-baseweb="select"] > div {{
     min-height:24px !important;max-height:32px !important;overflow:hidden !important;
@@ -110,7 +110,7 @@ body::after {{
 }}
 .stSidebar [data-testid="stSelectbox"] label,
 .stSidebar [data-testid="stMultiSelect"] label {{ font-size:0.70em !important;margin-bottom:1px !important; }}
-/* ── Sidebar TEXT INPUT — identical sizing to selectbox (used as fallback widget) */
+/* ── Sidebar TEXT INPUT: identical sizing to selectbox (used as fallback widget) */
 .stSidebar [data-testid="stTextInput"] [data-baseweb="input"] {{
     min-height:24px !important;max-height:32px !important;overflow:hidden !important;
     padding-top:0 !important;padding-bottom:0 !important;border-radius:3px !important;
@@ -127,7 +127,7 @@ body::after {{
     font-size:0.70em !important;margin-bottom:1px !important;
 }}
 
-/* ── Segmented control — size only; native Streamlit style handles selection ──── */
+/* ── Segmented control: size only; native Streamlit style handles selection ──── */
 .stSidebar [data-testid="stButtonGroup"] button {{
     font-size:9px !important;padding:2px 8px !important;
     transition:none !important;  /* kill transition to stop black flicker on selection change */
@@ -140,7 +140,7 @@ body::after {{
     font-size:0.8em !important;margin-bottom:1px !important;
 }}
 
-/* ── Multiselect tags — compact monospace card ───────────────────────────────── */
+/* ── Multiselect tags: compact monospace card ───────────────────────────────── */
 [data-baseweb="tag"] {{
     background:#050b14 !important;
     border:1px solid rgba(255,255,255,0.07) !important;
@@ -274,7 +274,7 @@ input:focus,textarea:focus,
     to   {{ opacity:1; }}
 }}
 
-/* ── Theme toggle button — prevent Streamlit from adding its own hover styles ─── */
+/* ── Theme toggle button: prevent Streamlit from adding its own hover styles ─── */
 button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 
 /* ── Suppress Streamlit loading animation ────────────────────────────────────── */
@@ -282,14 +282,25 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 [data-testid="stSkeleton"],[data-testid="stSkeleton"] * {{ display:none !important; }}
 [data-testid="stAppViewContainer"] > * {{ opacity:1 !important;transition:none !important; }}
 [data-stale] {{ opacity:1 !important;transition:none !important; }}
+/* Streamlit also dims the expander <summary> itself (its own emotion class, not
+   [data-stale]) to opacity 0.33 while a script is running. The log-polling loop
+   reruns the page every second, so expander titles blinked each second.
+   Measured in-browser: 19 dimmed states / 8s without this rule, 0 with it. */
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary * {{ opacity:1 !important; }}
 
 /* ── Transitions on key switching elements ───────────────────────────────────── */
-.stApp, [data-testid="stMain"], .stMainBlockContainer,
+/* NOTE: background-color/color transitions are deliberately NOT applied to the
+   page-level containers (.stApp, stMain, .stMainBlockContainer, .ft-section-banner).
+   Every Streamlit rerun re-creates the COMMON_CSS <style> element, leaving a
+   single frame where the themed background isn't applied yet. A transition turns
+   that imperceptible one-frame blip into a visible 250ms white->theme fade, which
+   is the "flickering" seen on expanders and banners during log polling.
+   Interactive widgets keep their transitions: they're small, and their colour only
+   changes on real hover/focus, not on every rerun. */
 [data-baseweb="input"], [data-baseweb="textarea"],
 [data-baseweb="select"] > div,
 [data-testid="stButton"] button {{ transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease !important; }}
-.ft-section-banner {{ transition: background-color 0.25s ease !important; }}
-.ft-sb-title, .ft-sb-sub, .ft-pl-name, .ft-pl-note {{ transition: color 0.25s ease !important; }}
 
 /* ── Prevent expander header flicker from fragment run_every polling ─────────── */
 [data-testid="stExpander"] details > summary,
@@ -312,7 +323,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light .stApp, .flytrack-light [data-testid="stMain"],
 .flytrack-light .stMainBlockContainer {{ background-color:#f0f4f8 !important; }}
 
-/* Main content text — p is medium grey so strong at #0f172a stands out clearly */
+/* Main content text: p is medium grey so strong at #0f172a stands out clearly */
 .flytrack-light [data-testid="stMain"] p,
 .flytrack-light [data-testid="stMain"] h1, .flytrack-light [data-testid="stMain"] h2,
 .flytrack-light [data-testid="stMain"] h3,
@@ -322,7 +333,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-testid="stMain"] h3 {{ color:#1e293b !important; }}
 .flytrack-light [data-testid="stMain"] [data-testid="stMarkdownContainer"] p,
 .flytrack-light [data-testid="stMain"] [data-testid="stMarkdownContainer"] li {{ color:#475569 !important; }}
-/* strong tags have inline color styles — !important overrides them */
+/* strong tags have inline color styles, !important overrides them */
 .flytrack-light [data-testid="stMain"] strong {{ color:#0f172a !important; }}
 .flytrack-light [data-testid="stMain"] [data-testid="stMarkdownContainer"] strong {{ color:#0f172a !important; }}
 
@@ -331,13 +342,17 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-testid="stMain"] [data-baseweb="textarea"] {{ background-color:#ffffff !important; border-color:rgba(15,23,42,0.14) !important; }}
 .flytrack-light [data-testid="stMain"] input,
 .flytrack-light [data-testid="stMain"] textarea {{ color:#0f172a !important; background-color:#ffffff !important; }}
-/* Multiselect search input sits on top of the first tag — must be transparent */
+/* Multiselect search input sits on top of the first tag, must be transparent */
 .flytrack-light [data-testid="stMain"] [data-testid="stMultiSelect"] input {{ background-color:transparent !important; }}
 .flytrack-light [data-baseweb="select"] > div {{ background-color:#ffffff !important; border-color:rgba(15,23,42,0.14) !important; }}
 
 /* Expander header hover in light */
+/* NOTE: no background-color transition here. This selector's specificity
+   (.class + attribute) overrode the `transition:none` anti-flicker rule above,
+   re-enabling a 0.15s fade on the expander header, so every Streamlit rerun
+   animated the header from unstyled to themed, which is the flicker seen while
+   log polling. Hover now applies instantly, which is also more responsive. */
 .flytrack-light [data-testid="stExpander"] summary {{
-    transition:background-color 0.15s !important;
     border-radius:4px !important;
 }}
 .flytrack-light [data-testid="stExpander"] summary:hover {{
@@ -351,7 +366,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-testid="stExpander"] [data-testid="stMarkdownContainer"] li {{ color:#64748b !important; }}
 .flytrack-light [data-testid="stExpander"] [data-testid="stMarkdownContainer"] strong {{ color:#0f172a !important; }}
 
-/* Expander border/bg — target all nested layers Streamlit might use */
+/* Expander border/bg: target all nested layers Streamlit might use */
 .flytrack-light [data-testid="stExpander"],
 .flytrack-light [data-testid="stExpander"] details,
 .flytrack-light [data-testid="stExpander"] details > *,
@@ -360,11 +375,11 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     border-color:rgba(15,23,42,0.09) !important;
 }}
 
-/* Tags in main content — base style; JS overrides with section colors */
+/* Tags in main content: base style; JS overrides with section colors */
 .flytrack-light [data-testid="stMain"] [data-baseweb="tag"] {{ background-color:#e8edf4 !important; border-color:rgba(15,23,42,0.12) !important; border-left-color:#4f46e5 !important; }}
 .flytrack-light [data-testid="stMain"] [data-baseweb="tag"] span {{ color:#0f172a !important; }}
 
-/* Dropdown popup menus — target popover + all intermediate wrapper divs BaseWeb injects */
+/* Dropdown popup menus: target popover + all intermediate wrapper divs BaseWeb injects */
 .flytrack-light [data-baseweb="popover"],
 .flytrack-light [data-baseweb="popover"] > div,
 .flytrack-light [data-baseweb="popover"] > div > div,
@@ -377,7 +392,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-baseweb="menu"] [role="option"] div {{ color:#0f172a !important; }}
 .flytrack-light [data-baseweb="menu"] [role="option"]:hover {{ background-color:#f0f4f8 !important; }}
 .flytrack-light [data-baseweb="menu"] [role="option"][aria-selected="true"] {{ background-color:#e8edf4 !important; }}
-/* "No results" / "No options" message — plain div/li not marked as role=option */
+/* "No results" / "No options" message: plain div/li not marked as role=option */
 .flytrack-light [data-baseweb="menu"] li {{ background-color:#ffffff !important; color:#64748b !important; }}
 .flytrack-light [data-baseweb="menu"] > div {{ background-color:#ffffff !important; color:#64748b !important; }}
 .flytrack-light [data-baseweb="menu"] p {{ background-color:#ffffff !important; color:#64748b !important; }}
@@ -395,7 +410,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-testid="stButton"] button:not(.vsc-btn) {{ border-color:rgba(15,23,42,0.14) !important; color:rgba(15,23,42,0.50) !important; }}
 .flytrack-light [data-testid="stButton"] button:not(.vsc-btn):hover {{ background:rgba(15,23,42,0.04) !important; border-color:rgba(15,23,42,0.25) !important; color:#0f172a !important; }}
 
-/* Number input — container border + input text */
+/* Number input: container border + input text */
 .flytrack-light [data-testid="stNumberInput"] > div,
 .flytrack-light [data-testid="stNumberInput"] [data-baseweb="input"],
 .flytrack-light [data-testid="stNumberInput"] [data-baseweb="base-input"] {{
@@ -405,13 +420,13 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-testid="stNumberInput"] input {{ color:#0f172a !important; background-color:transparent !important; }}
 .flytrack-light [data-testid="stNumberInput"] button {{ color:#64748b !important; }}
 .flytrack-light [data-testid="stNumberInput"] button:hover {{ background-color:rgba(15,23,42,0.05) !important; color:#0f172a !important; }}
-/* Number input focus — outer ring on whole box only */
+/* Number input focus: outer ring on whole box only */
 .flytrack-light [data-testid="stNumberInput"] > div:focus-within {{
     border-color:rgba(15,23,42,0.80) !important;
     box-shadow:0 0 0 2px rgba(15,23,42,0.08) !important;
     outline:none !important;
 }}
-/* Inner elements: darken border only — no shadow (prevents the inner shadow near the +/- buttons) */
+/* Inner elements: darken border only, no shadow (prevents the inner shadow near the +/- buttons) */
 .flytrack-light [data-testid="stNumberInput"] > div:focus-within [data-baseweb="input"],
 .flytrack-light [data-testid="stNumberInput"] > div:focus-within [data-baseweb="base-input"] {{
     border-color:rgba(15,23,42,0.80) !important;
@@ -419,7 +434,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     outline:none !important;
 }}
 
-/* Focus selection ring — all input/select/textarea boxes in light mode */
+/* Focus selection ring: all input/select/textarea boxes in light mode */
 .flytrack-light [data-baseweb="input"],
 .flytrack-light [data-baseweb="textarea"],
 .flytrack-light [data-baseweb="select"] > div {{
@@ -431,7 +446,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     box-shadow:0 0 0 2px rgba(15,23,42,0.08) !important;
     outline:none !important;
 }}
-/* Select ring — JS observer handles this via aria-expanded; CSS :focus is a fallback for the click moment */
+/* Select ring: JS observer handles this via aria-expanded; CSS :focus is a fallback for the click moment */
 .flytrack-light [data-baseweb="select"] > div[aria-expanded="true"],
 .flytrack-light [data-baseweb="select"] > div:focus {{
     border-color:rgba(15,23,42,0.80) !important;
@@ -448,16 +463,16 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 /* Alert boxes */
 .flytrack-light [data-testid="stAlert"] {{ background-color:#ffffff !important; }}
 
-/* Code blocks — st.code() widget; force all token spans dark (overrides syntax highlighting) */
+/* Code blocks: st.code() widget; force all token spans dark (overrides syntax highlighting) */
 .flytrack-light [data-testid="stCode"] {{ background-color:#f1f5f9 !important; border:1px solid rgba(15,23,42,0.08) !important; border-radius:4px !important; }}
 .flytrack-light [data-testid="stCode"] pre {{ background-color:#f1f5f9 !important; color:#334155 !important; }}
 .flytrack-light [data-testid="stCode"] code,
 .flytrack-light [data-testid="stCode"] code * {{ background-color:transparent !important; color:#334155 !important; }}
-/* Inline code — keep the professional green look, use dark green readable on light bg */
+/* Inline code: keep the professional green look, use dark green readable on light bg */
 .flytrack-light [data-testid="stMain"] code:not([data-testid="stCode"] code),
 .flytrack-light [data-testid="stExpander"] code:not([data-testid="stCode"] code) {{ background-color:#dcfce7 !important; color:#15803d !important; border-radius:3px !important; }}
 
-/* Grain — lighter touch on light bg */
+/* Grain: lighter touch on light bg */
 .flytrack-light body::after {{ opacity:0.018 !important; mix-blend-mode:multiply !important; }}
 
 /* ── Sidebar light ───────────────────────────────────────────────────────── */
@@ -545,14 +560,14 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light .ft-diag-icon[style*="#4ade80"] {{ color:#16a34a !important; }}
 .flytrack-light .ft-diag-icon[style*="#fbbf24"] {{ color:#d97706 !important; }}
 
-/* ── Segmented control (sidebar) — strip Streamlit's grey container ────── */
+/* ── Segmented control (sidebar): strip Streamlit's grey container ────── */
 /* JS handles per-button bg/color; CSS baseline prevents dark flash before JS fires */
 .flytrack-light .stSidebar [data-testid="stButtonGroup"],
 .flytrack-light .stSidebar [data-testid="stButtonGroup"] > div {{
     background-color:transparent !important;
     border-color:rgba(15,23,42,0.10) !important;
 }}
-/* CSS baseline: unselected buttons are transparent/grey — matches JS value exactly.
+/* CSS baseline: unselected buttons are transparent/grey. This matches JS value exactly.
    This means buttons are NEVER dark on first render in light mode; JS only upgrades
    the selected button to white+shadow without any visible intermediate dark state. */
 .flytrack-light .stSidebar [data-testid="stButtonGroup"] button {{
@@ -561,7 +576,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
     border-color:transparent !important;
 }}
 
-/* ── Segmented control (main content) — same baseline as sidebar ─────── */
+/* ── Segmented control (main content): same baseline as sidebar ─────── */
 .flytrack-light [data-testid="stMain"] [data-testid="stButtonGroup"],
 .flytrack-light [data-testid="stMain"] [data-testid="stButtonGroup"] > div {{
     background-color:transparent !important;
@@ -585,7 +600,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 .flytrack-light [data-baseweb="singleValue"] {{ color:#0f172a !important; }}
 .flytrack-light [data-testid="stMain"] [data-baseweb="select"] input {{ color:#0f172a !important; }}
 .flytrack-light [data-testid="stMain"] [data-baseweb="selectPlaceholder"] {{ color:#94a3b8 !important; }}
-/* Selectbox label in light mode — Streamlit defaults to its dark-theme label colour */
+/* Selectbox label in light mode: Streamlit defaults to its dark-theme label colour */
 .flytrack-light [data-testid="stMain"] [data-testid="stSelectbox"] label {{ color:#475569 !important; }}
 
 /* ── Multiselect left-border not clipped (dark + light) ─────────────── */
@@ -636,7 +651,7 @@ button.ft-theme-btn {{ outline:none !important; box-shadow:none !important; }}
 }}
 .flytrack-light .ft-img-btn:hover {{ background:rgba(255,255,255,1) !important; color:rgba(15,23,42,0.90) !important; }}
 
-/* ── Compact number inputs (main content only — sidebar inputs match selectbox) */
+/* ── Compact number inputs (main content only, sidebar inputs match selectbox) */
 [data-testid="stMain"] [data-testid="stNumberInput"] label{{font-size:0.80em !important;margin-bottom:1px !important;line-height:1.2 !important;}}
 [data-testid="stMain"] [data-testid="stNumberInput"] [data-baseweb="input"]{{min-height:30px !important;height:30px !important;}}
 [data-testid="stMain"] [data-testid="stNumberInput"] input{{font-size:0.84em !important;padding:2px 8px !important;height:30px !important;}}
@@ -661,14 +676,14 @@ _STOP_JS = """
                 if (!saved) localStorage.setItem('flytrack-theme', 'light');
             }
         })();
-        // Inject persistent <head> style immediately — survives page navigation, prevents black flash.
+        // Inject persistent <head> style immediately: survives page navigation, prevents black flash.
         // Function declaration is hoisted so calling it here (before its definition) is safe.
         injectPersistentStyle();
 
         function isDark() { return !doc.body.classList.contains('flytrack-light'); }
 
         // Persistent <head> style: minimal critical CSS that survives Streamlit page navigation.
-        // COMMON_CSS is injected into the React root (body) on each page — there's a gap between
+        // COMMON_CSS is injected into the React root (body) on each page; there's a gap between
         // navigation and re-injection where these head styles are the only thing keeping the bg correct.
         function injectPersistentStyle() {
             var _id = 'ft-persistent';
@@ -676,10 +691,13 @@ _STOP_JS = """
             if (!_el) { _el = doc.createElement('style'); _el.id = _id; doc.head.appendChild(_el); }
             var _light = !isDark();
             _el.textContent = (
-                // Always active: smooth bg transition so page-switch doesn't snap to black then back
-                '.stApp,[data-testid="stMain"],.stMainBlockContainer,'
-                +'.stSidebar,[data-testid="stHeader"],[data-testid="stSidebarHeader"]{'
-                +'transition:background-color 0.20s ease!important}'
+                // No background-color transition here: COMMON_CSS is re-created on every
+                // Streamlit rerun, and a transition animates that one-frame gap into a
+                // visible white->theme fade (the log-polling "flicker"). The head styles
+                // below already hold the correct background, so the swap is invisible
+                // without a transition. Page-switch still looks fine because these
+                // persistent rules apply immediately.
+                ''
             ) + (_light ? (
                 // Light mode: force bg immediately (before COMMON_CSS loads on next page)
                 'body.flytrack-light{background-color:#f0f4f8!important}'
@@ -692,17 +710,33 @@ _STOP_JS = """
                 +'.flytrack-light [data-testid="stHeader"],'
                 +'.flytrack-light [data-testid="stSidebarHeader"]'
                 +'{background-color:#f8fafc!important}'
-                // Select value text — put in <head> so it wins source-order battles against
+                // Select value text: put in <head> so it wins source-order battles against
                 // Emotion/Styletron which also inject into <head> but after COMMON_CSS (body)
                 +'.flytrack-light [data-baseweb="singleValue"],'
                 +'.flytrack-light [data-baseweb="selectValueContainer"] *'
                 +'{color:#0f172a!important}'
-            ) : '');
+            ) : (
+                // Dark mode: mirror of the light branch above. This used to be an empty
+                // string, which meant dark mode had NO persistent background at all.
+                // COMMON_CSS is re-created in the React root on every Streamlit rerun, so
+                // for one frame nothing held the dark background and the browser's white
+                // default showed through: the "flashes white then back to colour" flicker
+                // seen on expanders while the log-polling loop reruns the page.
+                'body{background-color:#020408!important}'
+                +'.stApp,[data-testid="stAppViewContainer"],'
+                +'[data-testid="stMain"],.stMainBlockContainer,'
+                +'[data-testid="stAppViewBlockContainer"]'
+                +'{background-color:#020408!important}'
+                +'.stSidebar,.stSidebar>div'
+                +'{background-color:#080d18!important}'
+                +'[data-testid="stHeader"],[data-testid="stSidebarHeader"]'
+                +'{background-color:#080d18!important}'
+            ));
         }
 
-        // ── Theme toggle — flag-based so the button works across page navigations ──
+        // ── Theme toggle: flag-based so the button works across page navigations ──
         // The button onclick ONLY writes doc._vscThemeFlag (a property on the stable
-        // parent document object — no cross-iframe function calls, no dead globals).
+        // parent document object: no cross-iframe function calls, no dead globals).
         // styleAll() checks the flag on every 150ms tick and applies the theme there,
         // inside the currently alive iframe's own execution context.
         window.parent.flytrackToggleTheme = function() {
@@ -739,7 +773,7 @@ _STOP_JS = """
             if (inner) inner.style.setProperty('background-color','transparent','important');
 
             // Filter out help/tooltip buttons (Streamlit renders "?" inside stButtonGroup
-            // when help= is set on st.segmented_control — skip those non-option buttons)
+            // when help= is set on st.segmented_control, skip those non-option buttons)
             var buttons = [];
             grp.querySelectorAll('button').forEach(function(b){
                 var txt = (b.textContent || '').trim();
@@ -749,7 +783,7 @@ _STOP_JS = """
 
             // ── Detect which button Streamlit considers selected ──────────────
             // On the very first call after a (re)render, Streamlit's React has already
-            // set an inline background-color on the selected button — read it before
+            // set an inline background-color on the selected button, read it before
             // we clear anything. Store in dataset so we don't re-detect next tick.
             if (!grp.dataset.vscSegDone) {
                 grp.dataset.vscSegDone = '1';
@@ -770,7 +804,7 @@ _STOP_JS = """
                 });
                 grp.dataset.vscSegSel = String(foundIdx !== -1 ? foundIdx : 0);
 
-                // Track user clicks — re-filter at click time to get correct index
+                // Track user clicks: re-filter at click time to get correct index
                 grp.addEventListener('click', function(e){
                     var btn = e.target.closest('button');
                     if (!btn) return;
@@ -989,7 +1023,7 @@ _STOP_JS = """
                 this.style.setProperty('color', btnColor, 'important');
                 this.style.setProperty('background-color', 'transparent', 'important');
             };
-            // Only write a flag on the stable parent doc — no cross-iframe function calls.
+            // Only write a flag on the stable parent doc: no cross-iframe function calls.
             // styleAll() picks it up on its next 150ms tick and applies the theme safely.
             tBtn.onclick = function() {
                 doc._vscThemeFlag = doc.body.classList.contains('flytrack-light') ? 'dark' : 'light';
@@ -1034,12 +1068,12 @@ _STOP_JS = """
                                 }
                                 node.querySelectorAll('[data-testid="stButtonGroup"]').forEach(styleSegCtrl);
                             }
-                            // Fix singleValue colour immediately — avoids grey flash before 150ms styleAll() tick
+                            // Fix singleValue colour immediately: avoids grey flash before 150ms styleAll() tick
                             if (!isDark()) {
                                 var _svFix = findSingleValue(node);
                                 if (_svFix) _svFix.style.setProperty('color','#0f172a','important');
                             }
-                            // Immediately fix popover colours in light mode — prevents black→white flicker
+                            // Immediately fix popover colours in light mode: prevents black→white flicker
                             if (!isDark()) {
                                 var pop = (node.getAttribute && node.getAttribute('data-baseweb')==='popover')
                                     ? node
@@ -1057,7 +1091,7 @@ _STOP_JS = """
                                             el.style.setProperty('color','#0f172a','important');
                                         });
                                     });
-                                    // A popover just opened — apply ring to whichever select is open
+                                    // A popover just opened: apply ring to whichever select is open
                                     doc.querySelectorAll('[data-baseweb="select"]').forEach(function(s){
                                         var c = s.firstElementChild;
                                         if (!c || c.tagName!=='DIV') return;
@@ -1073,7 +1107,7 @@ _STOP_JS = """
                                 }
                             }
                         });
-                        // Popover removed — dropdown closed — clear the open-ring flag on all select controls
+                        // Popover removed and dropdown closed: clear the open-ring flag on all select controls
                         m.removedNodes && m.removedNodes.forEach && m.removedNodes.forEach(function(rn){
                             if (rn.nodeType!==1) return;
                             if (!isDark() && rn.getAttribute && rn.getAttribute('data-baseweb')==='popover') {
@@ -1103,7 +1137,7 @@ _STOP_JS = """
                                 setTimeout(function(){ _svTgt._ftSvLock = false; }, 200);
                             }
                         }
-                        // Select ring — fires immediately when dropdown opens/closes (aria-expanded change)
+                        // Select ring: fires immediately when dropdown opens/closes (aria-expanded change)
                         // aria-expanded may be on [data-baseweb="select"] itself OR on its > div child
                         if (m.type==='attributes' && m.attributeName==='aria-expanded' && !isDark()) {
                             var _el = m.target;
@@ -1146,11 +1180,11 @@ _STOP_JS = """
             }
 
             if (sidebar) {
-                // Selectbox only — compact tight height (multiselect needs room for tags)
+                // Selectbox only: compact tight height (multiselect needs room for tags)
                 sidebar.querySelectorAll('[data-testid="stSelectbox"] [data-baseweb="select"] > div').forEach(function(el){
                     compactCtrl(el,'24px','0.76em','1px');
                 });
-                // Multiselect — original values, untouched
+                // Multiselect: original values, untouched
                 sidebar.querySelectorAll('[data-testid="stMultiSelect"] [data-baseweb="select"] > div').forEach(function(el){
                     compactCtrl(el,'27px','0.72em','2px');
                 });
@@ -1158,7 +1192,7 @@ _STOP_JS = """
                     .forEach(function(el){ el.style.setProperty('font-size','0.70em','important'); });
             }
             if (main) {
-                // Only selectbox — multiselect control divs must not get display:flex / padding-left:8px
+                // Only selectbox: multiselect control divs must not get display:flex / padding-left:8px
                 // because that conflicts with tag layout (first tag's border-left gets clipped).
                 main.querySelectorAll('[data-testid="stSelectbox"] [data-baseweb="select"] > div').forEach(function(el){
                     compactCtrl(el,'32px','0.80em','3px');
@@ -1170,7 +1204,7 @@ _STOP_JS = """
 
         function styleAll() {
             try {
-                // Flag written by button onclick — safe to read here (alive iframe context).
+                // Flag written by button onclick: safe to read here (alive iframe context).
                 if (doc._vscThemeFlag) {
                     var _flag = doc._vscThemeFlag;
                     doc._vscThemeFlag = null;
@@ -1186,12 +1220,12 @@ _STOP_JS = """
                 doc.querySelectorAll('button').forEach(function(b){ styleButton(b); });
                 styleSelects();
 
-                // Multiselect tags — section colour left-accent + text
+                // Multiselect tags: section colour left-accent + text
                 var sidebarAmber   = isDark() ? '#fbbf24' : '#d97706';
                 var sidebarAmberBg = isDark() ? '#fbbf2412' : '#d9770610';
                 doc.querySelectorAll('[data-baseweb="tag"]').forEach(function(tag){
                     if (tag.closest('[data-testid="stSidebar"]')) {
-                        // Sidebar multiselect tags — amber (AL page video selector)
+                        // Sidebar multiselect tags: amber (AL page video selector)
                         tag.dataset.vscTag='';  // always refresh sidebar tags on theme change
                         tag.style.setProperty('background-color', sidebarAmberBg, 'important');
                         tag.style.setProperty('border-left-color',sidebarAmber,   'important');
@@ -1209,10 +1243,10 @@ _STOP_JS = """
 
                 var sidebar = doc.querySelector('[data-testid="stSidebar"]');
                 if (sidebar) {
-                    // Segmented control — stButtonGroup is the correct testid in Streamlit 1.36+
+                    // Segmented control: stButtonGroup is the correct testid in Streamlit 1.36+
                     sidebar.querySelectorAll('[data-testid="stButtonGroup"]').forEach(styleSegCtrl);
 
-                    // Radio dots — white
+                    // Radio dots: white
                     sidebar.querySelectorAll('[role="radio"]').forEach(function(radio){
                         var checked   = radio.getAttribute('aria-checked')==='true';
                         var indicator = radio.querySelector('div');
@@ -1229,10 +1263,10 @@ _STOP_JS = """
                         }
                     });
 
-                    // Brand — injected by injectBrand(); poll as fallback for first render
+                    // Brand: injected by injectBrand(); poll as fallback for first render
                     injectBrand(doc.querySelector('[data-testid="stSidebarHeader"]'));
 
-                    // Fix 3: sidebar select value text — cast a wide net over all text elements
+                    // Fix 3: sidebar select value text, cast a wide net over all text elements
                     var light = !isDark();
                     sidebar.querySelectorAll('[data-baseweb="select"] span, [data-baseweb="select"] div, [data-baseweb="select"] p').forEach(function(el){
                         if (el.children.length === 0 || el.textContent.trim()) {  // leaf or text-bearing
@@ -1246,7 +1280,7 @@ _STOP_JS = """
                 var _main = doc.querySelector('[data-testid="stMain"]');
                 if (_main) _main.querySelectorAll('[data-testid="stButtonGroup"]').forEach(styleSegCtrl);
 
-                // Tag clipping fix — pad ctrl div + value container + tag margin all via inline style
+                // Tag clipping fix: pad ctrl div + value container + tag margin all via inline style
                 doc.querySelectorAll('[data-testid="stMain"] [data-testid="stMultiSelect"]').forEach(function(ms){
                     var sel = ms.querySelector('[data-baseweb="select"]');
                     if (sel) {
@@ -1271,7 +1305,7 @@ _STOP_JS = """
                     });
                 });
 
-                // Popover dropdown menus — BaseWeb injects inline dark bg on child divs;
+                // Popover dropdown menus: BaseWeb injects inline dark bg on child divs;
                 // force white bg + dark text in light mode (runs after user opens dropdown, 150ms delay fine)
                 if (!isDark()) {
                     doc.querySelectorAll('[data-baseweb="popover"]').forEach(function(pop){
@@ -1281,7 +1315,7 @@ _STOP_JS = """
                             d.style.setProperty('background-color','#ffffff','important');
                             d.style.setProperty('color','#64748b','important');
                         });
-                        // Option text — BaseWeb CSS-in-JS overrides our stylesheet; must use inline !important
+                        // Option text: BaseWeb CSS-in-JS overrides our stylesheet; must use inline !important
                         pop.querySelectorAll('[role="option"]').forEach(function(opt){
                             opt.style.setProperty('color','#0f172a','important');
                             opt.querySelectorAll('span,div,p').forEach(function(el){
@@ -1291,7 +1325,7 @@ _STOP_JS = """
                     });
                 }
 
-                // Fix 4: main content select containers — override Streamlit's dark inline bg
+                // Fix 4: main content select containers, override Streamlit's dark inline bg
                 var light = !isDark();
                 doc.querySelectorAll('[data-baseweb="select"]').forEach(function(selEl){
                     var ctrl = selEl.firstElementChild;
@@ -1322,7 +1356,7 @@ _STOP_JS = """
                             }
                         });
                     }
-                    // Value text color — span/p + everything in valueContainer + singleValue (BaseWeb's actual selected-value node)
+                    // Value text color: span/p + everything in valueContainer + singleValue (BaseWeb's actual selected-value node)
                     selEl.querySelectorAll(
                         'span, p, [data-baseweb="selectValueContainer"] *, [data-baseweb="singleValue"], [data-baseweb="singleValue"] *'
                     ).forEach(function(el){
@@ -1362,12 +1396,12 @@ _STOP_JS = """
             if (hdr) { var sb = hdr.querySelector('.ft-brand'); if (sb) sb.remove(); }
         })();
 
-        // ── Lightbox overlay — injected once into <html> so it escapes every stacking context ──
+        // ── Lightbox overlay: injected once into <html> so it escapes every stacking context ──
         (function(){
             if (doc.getElementById('ft-lightbox')) return;
             var lb = doc.createElement('div');
             lb.id = 'ft-lightbox';
-            // z-index max (2^31-1) + appended to <html> not <body> — ensures it paints above
+            // z-index max (2^31-1) + appended to <html> not <body>, ensures it paints above
             // Streamlit's sidebar/header even when they create their own stacking contexts.
             lb.style.cssText = 'display:none;position:fixed;inset:0;z-index:2147483647;'
                 +'background:rgba(2,4,8,0.90);cursor:zoom-out;'
@@ -1399,7 +1433,7 @@ _STOP_JS = """
                 }
             });
         })();
-        // Event delegation for .ft-img-wrap clicks — CSP-safe, no inline onclick needed.
+        // Event delegation for .ft-img-wrap clicks: CSP-safe, no inline onclick needed.
         // Runs once per iframe lifecycle; works for images added at any time via MutationObserver.
         (function(){
             // Guard: only attach once per parent-document lifetime
@@ -1455,7 +1489,7 @@ def section_label(title: str, status: str = "idle") -> str:
 
 
 def sidebar_brand() -> str:
-    """Kept for import compatibility — brand is now injected by JS."""
+    """Kept for import compatibility: brand is now injected by JS."""
     return ""
 
 

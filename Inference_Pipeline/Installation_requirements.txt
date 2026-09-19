@@ -14,9 +14,17 @@
 #   pip install -r requirements.txt
 # ─────────────────────────────────────────────────────────────────────────
 
-sleap-nn==0.1.3
-sleap-io==0.6.5
+sleap-nn==0.3.1
+sleap-io==0.9.2
 sleap==1.6.2
+# NOTE: sleap-nn 0.3.1 requires sleap-io>=0.9; pip will warn that sleap==1.6.2
+# officially wants sleap-io<0.7.0. Verified 2026-09-08 this is safe in practice:
+# sleap's __init__.py only re-exports class names from sleap_io (Labels,
+# LabeledFrame, Skeleton, Node, Instance, PredictedInstance, Video,
+# SuggestionFrame), all present in 0.9.2, and sleap.gui.app imports cleanly.
+# Upgraded from 0.1.3 because the base models (trained on Colab with 0.3.1)
+# write a GeometricConfig with `flip_p`, a field 0.1.3's schema doesn't have -
+# local fine-tuning failed with ConfigKeyError: Key 'flip_p' not in 'GeometricConfig'.
 h5py==3.16.0
 pandas==3.0.2
 matplotlib==3.10.8

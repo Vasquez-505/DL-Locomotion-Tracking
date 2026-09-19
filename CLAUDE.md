@@ -166,14 +166,32 @@ All models use **sleap-nn** (not legacy sleap), single-instance pipeline, Set B 
 
 ### Trained models — performance on TEST set
 
-| Model folder | Backbone | Pretrained | TRAIN frames | TEST MPE (px) | TEST CR_frame (%) | TEST FP (%) | TEST FN (%) |
-|---|---|---|---|---|---|---|---|
-| `drosophila_unet64_setB_260407_092817` | UNet-64 | No | 755 | 1.68 | 37.6 | 14.83 | 0.99 |
-| `drosophila_convnext_setB_260407_164511` | ConvNeXt | No | 755 | 2.44 | 64.1 | 22.09 | 1.27 |
-| `drosophila_convnext_pt_setB_260408_085648` | ConvNeXt | Yes (ImageNet) | 755 | **1.37** | **17.1** | **4.94** | 1.27 |
-| `drosophila_swint_pt_setB_260420_145559` | SwinT | Yes (ImageNet) | 755 | 1.37 | 22.2 | 5.81 | 1.55 |
+#### 755-frame models (original training set)
 
-**Best model: `drosophila_convnext_pt_setB_260408_085648`** — lowest TEST MPE and CR_frame. ConvNeXt-pretrained is the recommended default for new inference runs.
+| Model folder | Backbone | Pretrained | TRAIN frames | TEST MPE (px) | TEST CR_frame (%) | TEST CR_kp (%) | TEST FP (%) | TEST FN (%) |
+|---|---|---|---|---|---|---|---|---|
+| `drosophila_unet64_setB_260407_092817` | UNet-64 | No | 755 | 1.68 | 37.6 | — | 14.83 | 0.99 |
+| `drosophila_convnext_setB_260407_164511` | ConvNeXt | No | 755 | 2.44 | 64.1 | — | 22.09 | 1.27 |
+| `drosophila_convnext_pt_setB_260408_085648` | ConvNeXt | Yes (ImageNet) | 755 | **1.37** | **17.1** | — | **4.94** | 1.27 |
+| `drosophila_swint_pt_setB_260420_145559` | SwinT | Yes (ImageNet) | 755 | 1.37 | 22.2 | — | 5.81 | 1.55 |
+
+CR_kp not yet computed for 755-frame models (Step 8 full evaluation only run on 1416-frame models).
+
+#### 1416-frame models (expanded training set, results on Colab — not yet downloaded locally)
+
+| Model folder | Backbone | Pretrained | TRAIN frames | TEST MPE (px) | TEST CR_frame (%) | TEST CR_kp (%) | TEST FP (%) | TEST FN (%) | Best epoch |
+|---|---|---|---|---|---|---|---|---|---|
+| `drosophila_unet64_setB_1416frames` | UNet-64 | No | 1416 | 2.028 | 46.8 | 9.1 | 11.99 | 4.73 | 75 |
+| `drosophila_convnext_pt_setB_1416frames` | ConvNeXt | Yes (ImageNet) | 1416 | 1.617 | 34.3 | 5.2 | 7.19 | 2.97 | 34 |
+| `drosophila_swint_pt_setB_1416frames` | SwinT | Yes (ImageNet) | 1416 | — | — | — | — | — | — |
+
+**Note on comparing 755-frame vs 1416-frame models:** The two sets of models are NOT directly comparable — the VAL and TEST sets changed composition entirely. Old TEST = 117 frames (Fly1.2 only); new TEST = 248 frames (Fly1.2 + 6-hour female variant). Old VAL = 120 frames (Fly3.1 only); new VAL = 317 frames (Fly3.1 + 15-minute male variant). Age/sex variant videos are harder footage, so the new benchmark is genuinely more demanding. The higher error numbers for the 1416-frame models reflect a harder evaluation, not a training regression.
+
+**Notable per-keypoint anomalies (1416-frame, TEST set):**
+- UNet64: midlegR FP=38.37%, hindlegR FN=33.33% — extremely high error on this specific video
+- ConvNeXt-pt: hindlegR FP=21.24%, hindlegL FN=13.18% — also elevated but more controlled
+
+**Best model overall: `drosophila_convnext_pt_setB_260408_085648`** (755-frame) — lowest TEST MPE=1.37px, CR_frame=17.1%. ConvNeXt-pretrained is the recommended default for inference.
 
 Each model folder contains:
 - `best.ckpt` — best checkpoint by val loss
@@ -214,11 +232,10 @@ The GUI (`gui/lib/nb_utils.py`, function `_ev_reconstruct_config`) can reconstru
 
 **Custom thesis metrics** (computed in GUI + notebooks):
 - **MPE** (px) — mean position error on visible keypoints (identical to SLEAP avg_dist)
-- **FP rate (%)** — false contact predictions when leg is airborne
-- **FN rate (%)** — missed contacts when leg is on ground
-- **TD (px/fr)** — tracking drift, frame-to-frame displacement
-- **CR_frame (%)** — % of frames needing at least one correction (primary metric for Prof. César)
-- **CR_kp (%)** — % of keypoint-frames needing correction (τ=5px threshold)
+- **FP rate (%)** — false contact predictions when leg is airborne; denominator = total airborne kp-frames
+- **FN rate (%)** — missed contacts when leg is on ground; denominator = total visible kp-frames
+- **CR_kp (%)** — % of keypoint-frames needing correction (τ=5px); *primary thesis metric*
+- **CR_frame (%)** — % of frames with at least one error; secondary metric capturing error dispersion
 
 **Global FP/FN rates** are true global ratios (total_FP / total_airborne, total_FN / total_visible) — not `nanmean` of per-keypoint rates.
 
@@ -406,18 +423,20 @@ Project root: C:\Users\pepev\Desktop\103665_THESIS_DL_Model\Model_Design_&_Train
 
 ## Current Status
 
-- [x] SLEAP models trained and evaluated (4 models, Set B, single-instance)
-- [x] **Best model identified:** `drosophila_convnext_pt_setB_260408_085648` — TEST MPE=1.37px, CR_frame=17.1%
+- [x] SLEAP models trained and evaluated (4 models, 755-frame set; 2 models, 1416-frame set)
+- [x] **Best model overall:** `drosophila_convnext_pt_setB_260408_085648` (755-frame) — TEST MPE=1.37px, CR_frame=17.1%
+- [x] 1416-frame models evaluated on Colab (UNet64: CR_kp=9.1%, CR_frame=46.8%; ConvNeXt-pt: CR_kp=5.2%, CR_frame=34.3%)
+- [x] 1416-frame models evaluated on harder VAL/TEST sets (age/sex variants added) — not directly comparable to 755-frame results
+- [x] Full Step 8 evaluation cell working: processes all frames (1416/317/248), saves summary_metrics.csv + per_keypoint_metrics_*.csv
+- [x] TRAIN set expanded to 1416 frames; VAL=317, TEST=248 (unchanged)
 - [x] End-to-end inference pipeline working (GUI Bulk Pipeline + manual notebooks)
 - [x] Streamlit GUI complete — Bulk Pipeline + Active Learning pages
-- [x] Active learning loop operational — merge corrected labels → fine-tune → new model (pipeline validated with a test run)
-- [x] TRAIN set is 755 frames (official); 1057-frame merged file exists as a test AL run artifact, not yet adopted as canonical
+- [x] Active learning loop operational — merge corrected labels → fine-tune → new model
 - [x] Predictions generated for 4 videos (Fly1.1, Fly1.2, Fly1.3, Fly3.1) in `Inference_Pipeline/Predictions/`
 - [x] FlyWalker TRACKS.mat output working; Phase 8 MATLAB partial (headless launch unreliable on Windows)
-- [x] SwinT config reconstruction from checkpoint fixed (`output_stride=4` for backbone + head)
-- [x] Image persistence bug fixed in Active Learning GUI (PIL bytes bypass browser cache)
-- [x] Step 8.5 (TEST set evaluation) added to both copies of Training_and_inference notebook
-- [ ] Download fine-tuned UNet64 (1057 frames) from Colab → add to SLEAP_Models
+- [x] TD (tracking drift) removed from all metric outputs — CR_kp confirmed as primary thesis metric
+- [ ] Download 1416-frame model folders from Colab → place in `Inference_Pipeline/Models/SLEAP_Models/`
+- [ ] Run Step 8 evaluation on SwinT 1416-frame model (results not yet recorded)
 - [ ] Re-run VIDEO_Generation_&_Treatment.ipynb for remaining videos with corrected BG subtraction
 - [ ] Run full pipeline end-to-end on new videos with ConvNeXt-pretrained model
 

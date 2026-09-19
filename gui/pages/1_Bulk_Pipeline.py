@@ -24,7 +24,7 @@ _load_state(st.session_state)
 st.markdown(
     f'<h2 style="margin-bottom:2px;color:{TEXT}">Bulk Inference &amp; FlyWalker Pipeline</h2>'
     f'<p style="color:{MUTED};font-size:0.85em;margin-bottom:6px">'
-    f'Run the three sections in order — each streams live output below.</p>',
+    f'Run the three sections in order. Each streams live output below.</p>',
     unsafe_allow_html=True,
 )
 
@@ -111,7 +111,7 @@ def detected_videos() -> list[str]:
 
 
 def detected_raw_videos() -> list[str]:
-    """Videos available as raw PNGs — candidates for Section 1 inference."""
+    """Videos available as raw PNGs: candidates for Section 1 inference."""
     raw_dir = NB_DIR / "PNGs" / "Raw_PNGs"
     if not raw_dir.exists():
         return []
@@ -134,7 +134,7 @@ def detected_models(kind: str) -> list[str]:
                       if p.is_dir() and not p.name.startswith("."))
 
 
-# ── Sidebar — Configuration ───────────────────────────────────────────────────
+# ── Sidebar: Configuration ───────────────────────────────────────────────────
 
 with st.sidebar:
     st.markdown(
@@ -146,11 +146,13 @@ with st.sidebar:
 
     inference_model = st.segmented_control(
         "Inference model", ["SLEAP", "Local"],
-        default="SLEAP", key="bp_inf_model",
+        default="SLEAP",
+        key="bp_inf_model",
     )
     video_set = st.segmented_control(
         "Video set", ["B", "C", "D"],
-        default="B", key="bp_video_set",
+        default="B",
+        key="bp_video_set",
         help="B = hot colourmap  ·  C = no colourmap  ·  D = raw",
     )
 
@@ -168,7 +170,7 @@ with st.sidebar:
     else:
         model_name = st.text_input(
             "Model",
-            value="drosophila_unet64_setB_260407_092817",
+            value=st.session_state.get("bp_model_name_fb", "drosophila_unet64_setB_260407_092817"),
             key="bp_model_name_fb",
         )
 
@@ -185,13 +187,13 @@ with st.sidebar:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 1 — DL Model Inference (Phases 1–3)
+# SECTION 1: DL Model Inference (Phases 1–3)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _s1_status = _state("s1_status", "idle")
 st.markdown(
     section_banner(PURPLE, "1", "DL Model Inference",
-        "Phase 1: Raw processing &nbsp;·&nbsp; Phase 2: Video export &nbsp;·&nbsp; Phase 3: Pose estimation",
+        "Phase 1: Background subtraction &nbsp;·&nbsp; Phase 2: Video export &nbsp;·&nbsp; Phase 3: DL model inference",
         status_dot(_s1_status, PURPLE)),
     unsafe_allow_html=True,
 )
@@ -199,17 +201,17 @@ st.markdown(
 with st.expander("What this does", expanded=False):
     st.markdown(
         """
-        **Phase 1** — Background subtraction for every video:
+        **Phase 1**: Background subtraction for every video:
         raw PNGs → Set B (hot colourmap) + Set C (no colourmap) + Set D (raw).
 
-        **Phase 2** — PNG sets → lossless AVI (FFV1 codec, configurable FPS set in the sidebar).
+        **Phase 2**: PNG sets → lossless AVI (FFV1 codec, configurable FPS set in the sidebar).
 
-        **Phase 3** — SLEAP `sleap-nn track` or ADPT `inference.py` →
+        **Phase 3**: SLEAP `sleap-nn track` or ADPT `inference.py` →
         `.predictions.slp` per video, relinked to Set B for SLEAP GUI display.
         """
     )
 
-# Videos input — lives under Section 1
+# Videos input: lives under Section 1
 st.markdown(
     f'<div style="color:{PURPLE};font-size:0.72em;font-weight:700;'
     f'text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'
@@ -228,7 +230,7 @@ if _avail_raw:
 else:
     _txt = st.text_area(
         "Videos for inference",
-        value="CantonS_unamp_Fly1.2\nCantonS_unamp_Fly3.1",
+        value=st.session_state.get("bp_video_input", "CantonS_unamp_Fly1.2\nCantonS_unamp_Fly3.1"),
         height=90, key="bp_video_input", label_visibility="collapsed",
         help="Folder names under Inference_Pipeline/PNGs/Raw_PNGs/",
     )
@@ -264,7 +266,7 @@ _s1_block()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 2 — Predictions Inspection (Phases 4–6)
+# SECTION 2: Predictions Inspection (Phases 4–6)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _s2_status = (
@@ -279,7 +281,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Phase 4 — SLEAP GUIs ──────────────────────────────────────────────────────
+# ── Phase 4: SLEAP GUIs ──────────────────────────────────────────────────────
 _ph4_status = _state("ph4_status", "idle")
 st.markdown(
     phase_label(TEAL, "4", "Open SLEAP GUIs for Correction", status_dot(_ph4_status, TEAL)),
@@ -291,14 +293,14 @@ with st.expander("Instructions", expanded=False):
         """
         After Section 1, open the SLEAP GUIs for each video and:
         1. Review predicted keypoints frame by frame.
-        2. Correct wrong positions — drag markers to correct locations.
+        2. Correct wrong positions: drag markers to correct locations.
         3. Verify leg contacts match FTIR visibility (only ground-touching legs visible).
         4. **Save** the `.slp` file before closing.
 
         **FlyWalker requires:** ≥ 4 distinct contact events per leg,
         both L/R sides detected at least once, ≥ 1 tripod stance frame.
 
-        **Tip — trimming frames in SLEAP:** navigate to the desired frame →
+        **Tip: trimming frames in SLEAP:** navigate to the desired frame →
         **Ctrl+Fn+J** to select the interval to keep → **Labels → Custom Instance Delete**.
         """
     )
@@ -342,19 +344,19 @@ def _ph4_block():
 
 _ph4_block()
 
-# ── Phase 5 — Trim tail frames ────────────────────────────────────────────────
+# ── Phase 5: Trim tail frames ────────────────────────────────────────────────
 _ph5_status = _state("ph5_status", "idle")
 st.markdown(
-    phase_label(TEAL, "5", "Trim Tail Frames", f"optional &nbsp;·&nbsp; {status_dot(_ph5_status, TEAL)}"),
+    phase_label(TEAL, "5", "Trim Frames", f"optional &nbsp;·&nbsp; {status_dot(_ph5_status, TEAL)}"),
     unsafe_allow_html=True,
 )
 with st.expander("How trimming works", expanded=False):
     st.markdown(
         """
-        Remove frames where the fly stopped walking — FlyWalker needs continuous locomotion.
-        Enter the interval of frames to **keep** per video (0 = keep all).
+        Remove frames where the fly stopped walking. FlyWalker needs continuous locomotion.
+        Enter the interval of frames to **keep** per video.
 
-        **Tip — trim directly in SLEAP instead (Phase 4):** navigate to the desired frame →
+        **Tip: trim directly in SLEAP instead (Phase 4):** navigate to the desired frame →
         **Ctrl+Fn+J** to select the interval to keep → **Labels → Custom Instance Delete**.
         This avoids re-exporting and is faster for small adjustments.
         """
@@ -381,7 +383,7 @@ for vfn in trim_vids:
         )
     with _c2:
         _end = st.number_input(
-            "Keep until frame (0 = keep all)",
+            "Keep until frame",
             min_value=0,
             value=st.session_state.get(f"trim_{vfn}", 0),
             step=1,
@@ -421,7 +423,7 @@ def _ph5_block():
 _ph5_block()
 
 
-# ── FLAGS B — videos for Phase 6 and Section 3 ───────────────────────────────
+# ── FLAGS B: videos for Phase 6 and Section 3 ───────────────────────────────
 st.markdown(
     f'<div style="color:{TEAL};font-size:0.72em;font-weight:700;'
     f'text-transform:uppercase;letter-spacing:0.1em;margin:16px 0 4px">'
@@ -441,7 +443,7 @@ else:
     videos_c = [v.strip() for v in videos_c_raw.splitlines() if v.strip()]
 
 
-# ── Phase 6 — Pre-flight Validation ──────────────────────────────────────────
+# ── Phase 6: Pre-flight Validation ──────────────────────────────────────────
 _ph6_status = _state("ph6_status", "idle")
 st.markdown(
     phase_label(TEAL, "6", "Pre-flight Validation", status_dot(_ph6_status, TEAL)),
@@ -453,12 +455,14 @@ with st.expander("What this checks", expanded=False):
         """
         Validates each corrected `.slp` for FlyWalker compatibility:
         - Leg contact counts (≥ 4 usable events per leg required)
+        - Head visible in all active frames (WARN: missing head breaks body direction)
         - Left / right side completeness
         - Tripod gait detection
-        - Support polygon crash risk
+        - Support polygon crash risk (1–2 simultaneous contacts in top-5 patterns → crash)
+        - Five or six simultaneous contacts (NOTE: FlyWalker warns but does not crash)
         - Single-leg frames, isolated 1-frame contacts, same-side-only frames
 
-        Fix any FAIL/WARN items before running Section 3.
+        Fix any FAIL items before running Section 3. WARN/NOTE items are informational.
         """
     )
 
@@ -491,14 +495,14 @@ _ph6_block()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION 3 — FlyWalker Analysis (Phases 7–10)
+# SECTION 3: FlyWalker Analysis (Phases 7–10)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _s3_status = _state("s3_status", "idle")
 st.markdown(
-    section_banner(GREEN, "3", "FlyWalker Analysis",
-        "Phase 7: Export labels &nbsp;·&nbsp; Phase 8: Extract tracks &nbsp;·&nbsp; "
-        "Phase 9: Write MATLAB data &nbsp;·&nbsp; Phase 10: FlyWalker analysis",
+    section_banner(GREEN, "3", "FlyWalker Output Generation",
+        "Phase 7: Predictions analysis export &nbsp;·&nbsp; Phase 8: Parameter calculation &nbsp;·&nbsp; "
+        "Phase 9: TRACKS.mat assembly &nbsp;·&nbsp; Phase 10: FlyWalker analysis",
         status_dot(_s3_status, GREEN)),
     unsafe_allow_html=True,
 )
@@ -506,19 +510,19 @@ st.markdown(
 with st.expander("What this does", expanded=False):
     st.markdown(
         """
-        **Phase 7** — `sleap-convert` → `.analysis.h5`
+        **Phase 7**: `sleap-convert` → `.analysis.h5`
 
-        **Phase 8** — Extract body position, orientation, leg contacts from HDF5.
+        **Phase 8**: Extract body position, orientation, leg contacts from HDF5.
 
-        **Phase 9** — Write `TRACKS.mat` (MATLAB struct, FlyWalker format).
+        **Phase 9**: Write `TRACKS.mat` (MATLAB struct, FlyWalker format).
 
-        **Phase 10** — Launch FlyWalker MATLAB analysis → graphs + `ResultSummary.xlsx`.
-        If MATLAB headless launch fails, a `_run_flywalker.m` script is written for manual execution.
+        **Phase 10**: Launch FlyWalker MATLAB analysis → graphs + `ResultSummary.xlsx`.
+        If MATLAB headless launch fails, a `run_flywalker.m` script is written for manual execution.
         """
     )
 
 with st.expander("Pixel calibration (µm/px)", expanded=False):
-    st.caption("Default 68.7 µm/px for Sets B/C/D. Enter the number of micrometres per pixel.")
+    st.caption("Enter the number of micrometres per pixel.")
     for vname in videos_c:
         _dkey = f"distcal_{vname}"
         _dval = st.session_state.get(_dkey, 68.7)
@@ -572,8 +576,96 @@ with st.expander("Output files reference", expanded=False):
         | `TRACKS.mat` | FlyWalker input (MATLAB struct) |
         | `FlyWalker_<name>/` | FlyWalker output graphs (`.fig`) |
         | `ResultSummary.xlsx` | FlyWalker results table |
-        | `_run_flywalker.m` | Manual MATLAB script (fallback) |
+        | `run_flywalker.m` | Manual MATLAB script (fallback) |
+        | `<name>_annotated.mp4` | Corrected predictions overlaid on video |
+        | `<name>_annotated_10x_slower.mp4` | Same overlay, played back 10x slower |
         """
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Render Annotated Video: standalone add-on, not a numbered pipeline step.
+# Styled like the Active Learning page's "Inspect Model Results" panel, with its
+# own video selector independent of the videos_c batch used by Phase 6/Section 3.
+# ─────────────────────────────────────────────────────────────────────────────
+
+_ph11_status = _state("ph11_status", "idle")
+st.markdown(
+    f'<div style="background:linear-gradient(120deg,{GREEN}12,{GREEN}04);'
+    f'border:1px solid {GREEN}25;border-left:3px solid {GREEN};'
+    f'border-radius:6px;padding:10px 16px;margin:30px 0 10px;'
+    f'display:flex;align-items:center;gap:10px">'
+    f'<div style="color:{GREEN};font-size:0.65em;font-weight:700;text-transform:uppercase;'
+    f'letter-spacing:0.12em">Render Annotated Video</div>'
+    f'<div style="color:{MUTED};font-size:0.78em;border-left:1px solid {GREEN}25;'
+    f'padding-left:10px">Overlay corrected predictions on any video\'s footage: pick one or more below</div>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
+
+with st.expander("What this generates", expanded=False):
+    st.markdown(
+        """
+        Colour-coded keypoints (legs are also labelled: RF/LF/RM/LM/RH/LH; the
+        body markers are yellow diamonds joined by a head-thorax-abdomen line),
+        plus a header band with FPS, frame number, elapsed time, and a 1 mm
+        scale bar. A second, slowed-down copy is also generated for easier
+        frame-by-frame review.
+
+        Reads whatever `<name>.predictions.slp` currently holds, so run this
+        after Phase 4 correction (and Phase 5 trim, if used).
+
+        Output: `<name>_annotated.mp4` and `<name>_annotated_10x_slower.mp4`
+        in `Predictions/<VIDEO_FOLDER_NAME>/`.
+        """
+    )
+
+_overlay_candidates = sorted(
+    v for v in detected_videos()
+    if any((NB_DIR / "Predictions" / v).glob("*.predictions.slp"))
+)
+if not _overlay_candidates:
+    st.caption("No videos with `.predictions.slp` found in `Predictions/`.")
+    videos_overlay = []
+else:
+    videos_overlay = st.multiselect(
+        "Select videos (prediction files) to render",
+        options=_overlay_candidates,
+        default=[v for v in videos_c if v in _overlay_candidates],
+        key="bp_videos_overlay",
+    )
+
+
+def _ph11_on_run():
+    if not videos_overlay:
+        st.warning("Select at least one video to render.")
+        return
+    _overlay_distcal = {
+        v: st.session_state.get(f"distcal_{v}", 68.7) for v in videos_overlay
+    }
+    flags_a = {
+        "VIDEO_FOLDER_NAMES_INF": video_names_inf,
+        "INFERENCE_MODEL": inference_model,
+        "VIDEO_SET": video_set,
+        "MODEL_NAME": model_name,
+        "FPS": fps,
+        "DISTCAL_MAP": _overlay_distcal,
+    }
+    try:
+        script = nb_utils.bulk_video_overlay_script(BULK_NB, flags_a, videos_overlay)
+        start_phase("ph11", script)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Could not build script: {e}")
+
+
+@st.fragment(run_every=1.0)
+def _ph11_block():
+    _poll_inner("ph11")
+    _render_run_stop("ph11", "▶  Render Annotated Video", _ph11_on_run)
+
+
+_ph11_block()
+
 
 _save_state(st.session_state)

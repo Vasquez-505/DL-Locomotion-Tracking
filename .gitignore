@@ -69,6 +69,10 @@ NOVA_PC_SETUP_GUIDE.md
 
 # ── Scratch material (not part of the maintained codebase) ────────────────────
 Test_NOVA/
+Inference_Pipeline/FlyWalker_Baseline/
+
+# ── Original FlyWalker reference code (not used by the DL pipeline) ───────────
+Flywalker_Full_Original/
 
 # ── Logs ────────────────────────────────────────────────────────────────────
 *.log
@@ -76,6 +80,10 @@ Test_NOVA/
 # ── Machine-specific run/session state (absolute paths, local widget state) ──
 .al_run_state.json
 gui/.gui_state.json
+
+# ── Local tool artefacts (MCP session logs, tool config) ─────────────────────
+.playwright-mcp/
+.mcp.json
 
 # ── OS / editor artefacts ─────────────────────────────────────────────────────
 .DS_Store

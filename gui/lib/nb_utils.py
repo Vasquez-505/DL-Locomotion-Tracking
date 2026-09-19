@@ -15,7 +15,7 @@ The GUI runs each pipeline section by:
   4. Writing to a temp file for subprocess execution
 
 The temp script is run with cwd=NB_DIR so that Path().resolve() inside the
-notebook code resolves to the Inference_Pipeline/ directory — exactly what
+notebook code resolves to the Inference_Pipeline/ directory, exactly what
 BASE_DIR does in the notebook kernel.
 """
 import json
@@ -44,7 +44,7 @@ def find_cell(cells: list[dict], keyword: str) -> tuple[int, str]:
     raise ValueError(f"No code cell found containing {keyword!r}")
 
 
-# ── FLAGS cell — extract only the helper section ──────────────────────────────
+# ── FLAGS cell: extract only the helper section ──────────────────────────────
 
 _HELPERS_MARKERS = [
     "# ── Derived paths helper",
@@ -64,8 +64,24 @@ def extract_helpers(flags_cell_source: str) -> str:
         if marker in flags_cell_source:
             idx = flags_cell_source.index(marker)
             return flags_cell_source[idx:]
-    # Fallback: include everything (safe — user FLAGS will be re-defined last)
+    # Fallback: include everything (safe: user FLAGS will be re-defined last)
     return flags_cell_source
+
+
+def extract_helpers_quiet(flags_cell_source: str) -> str:
+    """Same as extract_helpers(), but drops the trailing print block
+    ("Notebook dir / Inference model / Videos to process ...").
+
+    That block reports on VIDEO_FOLDER_NAMES_INF, INFERENCE_MODEL, VIDEO_SET,
+    MODEL_NAME (flags that matter to Phases 1-3 but are irrelevant to a phase
+    that only needs _paths()). Printing them anyway is actively misleading:
+    e.g. Phase 11 would report the "Videos to process" list from FLAGS A
+    (inference config) while actually rendering a completely different set of
+    videos.
+    """
+    helpers = extract_helpers(flags_cell_source)
+    cut = helpers.find('\nprint(f"Notebook dir')
+    return helpers if cut == -1 else helpers[:cut]
 
 
 # ── script builder ────────────────────────────────────────────────────────────
@@ -78,7 +94,7 @@ def _header() -> str:
 
 
 def build_script(flags_vars: dict, helpers_src: str, cell_sources: list[str]) -> str:
-    """Compose a full Python script — for Bulk Pipeline.
+    """Compose a full Python script for Bulk Pipeline.
 
     User FLAGS come first so notebook helpers can reference them, but the helper
     section from the FLAGS cell (BASE_DIR, _paths, etc.) comes immediately after.
@@ -104,14 +120,14 @@ def build_script(flags_vars: dict, helpers_src: str, cell_sources: list[str]) ->
 
 def build_script_with_override(nb_flags_src: str, flags_vars: dict,
                                 cell_sources: list[str]) -> str:
-    """Compose a full Python script — for Active Learning.
+    """Compose a full Python script for Active Learning.
 
     The notebook's FLAGS cell (which has imports + default variable assignments)
     comes first, then user FLAGS are appended to override the defaults.
 
     Args:
         nb_flags_src: complete source of the notebook's FLAGS cell (cell 1).
-        flags_vars:   dict of {name: value} — user's overrides.
+        flags_vars:   dict of {name: value}, user's overrides.
         cell_sources: list of subsequent cell source strings.
     """
     flag_lines = [f"{name} = {val!r}" for name, val in flags_vars.items()]
@@ -185,16 +201,16 @@ def _strip_var_block(src: str, var_name: str) -> str:
 
 
 def bulk_trim_script(nb_path: Path, flags_a: dict, trim_frames: dict = None) -> Path:
-    """Phase 4.4: trim to a frame interval [TRIM_START, TRIM_END].
+    """Phase 5: trim to a frame interval [TRIM_START, TRIM_END].
 
-    ``trim_frames`` is accepted for backward compatibility but ignored — the GUI
+    ``trim_frames`` is accepted for backward compatibility but ignored. The GUI
     now passes ``TRIM_START`` and ``TRIM_END`` dicts via ``flags_a``.
     """
     cells = get_cells(nb_path)
     _, flags_src  = find_cell(cells, "FLAGS A")
     # Locate the trim cell by its TRIM_END marker (unique to that cell)
     _, trim_src   = find_cell(cells, "TRIM_END = {")
-    # Strip the notebook's hardcoded TRIM_START / TRIM_END blocks — GUI injects them
+    # Strip the notebook's hardcoded TRIM_START / TRIM_END blocks: GUI injects them
     trim_src = _strip_var_block(trim_src, "TRIM_START")
     trim_src = _strip_var_block(trim_src, "TRIM_END")
     helpers = extract_helpers(flags_src)
@@ -235,6 +251,20 @@ def bulk_section2_script(nb_path: Path, flags_a: dict, video_names_ana: list) ->
     return bulk_section3_script(nb_path, flags_a, video_names_ana)
 
 
+def bulk_video_overlay_script(nb_path: Path, flags_a: dict, video_names_ana: list) -> Path:
+    """Phase 11: render the corrected predictions overlaid on the Set B video."""
+    cells = get_cells(nb_path)
+    _, flags_src = find_cell(cells, "FLAGS A")
+    _, ph11_src  = find_cell(cells, "# Phase 11 --")
+    # extract_helpers_quiet drops the "Notebook dir / Videos to process" print
+    # block: it reports FLAGS A's VIDEO_FOLDER_NAMES_INF, which is unrelated
+    # to which videos this phase actually renders.
+    helpers = extract_helpers_quiet(flags_src)
+    merged_flags = {**flags_a, "VIDEO_FOLDER_NAMES_ANA": video_names_ana}
+    script = build_script(merged_flags, helpers, [ph11_src])
+    return write_temp_script(script)
+
+
 # ── Active Learning script builders ───────────────────────────────────────────
 
 def _al_nb_flags(nb_path: Path) -> tuple[str, list[dict]]:
@@ -262,10 +292,10 @@ def al_step2_script(nb_path: Path, flags: dict) -> Path:
 
 
 def al_step3_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 3: build fine-tune config YAML.
+    """Step 4: build fine-tune config YAML.
 
     Steps 1 & 2 outputs are loaded from .al_run_state.json by the target cell
-    itself — no need to re-execute them here.
+    itself, so no need to re-execute them here.
     """
     nb_flags, cells = _al_nb_flags(nb_path)
     _, s3 = find_cell(cells, "single_instance_ft")
@@ -275,7 +305,7 @@ def al_step3_script(nb_path: Path, flags: dict, run_name: str) -> Path:
 
 
 def al_step35_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 3.5: hardware check (standalone — no notebook steps needed before it)."""
+    """Step 5: hardware check (standalone: no notebook steps needed before it)."""
     nb_flags, cells = _al_nb_flags(nb_path)
     _, s35 = find_cell(cells, "platform.processor")
     merged = {**flags, "RUN_NAME": run_name}
@@ -284,10 +314,10 @@ def al_step35_script(nb_path: Path, flags: dict, run_name: str) -> Path:
 
 
 def al_step4_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 4: train locally or prepare Colab zip.
+    """Step 6: train locally or prepare Colab zip.
 
     Steps 1, 2, 3 outputs are loaded from .al_run_state.json by the target cell
-    itself — no need to re-execute them here.
+    itself, so no need to re-execute them here.
     """
     nb_flags, cells = _al_nb_flags(nb_path)
     _, s4 = find_cell(cells, "sleap_nn.cli")
@@ -297,10 +327,10 @@ def al_step4_script(nb_path: Path, flags: dict, run_name: str) -> Path:
 
 
 def al_step5_script(nb_path: Path, flags: dict, run_name: str) -> Path:
-    """Step 5: evaluate & compare results.
+    """Step 7: evaluate & compare results.
 
     Steps 1, 2, 3 outputs are loaded from .al_run_state.json by the target cell
-    itself — no need to re-execute them here.
+    itself, so no need to re-execute them here.
     """
     nb_flags, cells = _al_nb_flags(nb_path)
     _, s5 = find_cell(cells, "eval_model")
@@ -363,7 +393,7 @@ def _strip_comparison(src: str) -> str:
     return before + after
 
 
-# ── Prediction pre-step — generates missing labels_pr/gt/metrics files ────────
+# ── Prediction pre-step: generates missing labels_pr/gt/metrics files ────────
 
 _PREDICTION_PRE_STEP = '''
 import subprocess as _evsubp, shutil as _evshutil
@@ -433,7 +463,7 @@ def _ev_reconstruct_config(model_dir):
             _cc = _torch.load(str(_cand_ckpt), map_location='cpu', weights_only=False)
             if set(_cc['state_dict'].keys()) != _target_keys:
                 continue
-            # Same architecture — copy config, update run identifiers only
+            # Same architecture: copy config, update run identifiers only
             with open(_cand_cfg, encoding='utf-8') as _f:
                 _cfg = _yaml.safe_load(_f)
             _mname = model_dir.name
@@ -512,7 +542,7 @@ def _ev_reconstruct_config(model_dir):
                 'pre_trained_weights': None,
             }
         else:
-            print("  Unknown backbone — cannot reconstruct config.")
+            print("  Unknown backbone. Cannot reconstruct config.")
             print("  Download the complete model folder from Google Drive/Colab.")
             return False
 
@@ -613,14 +643,14 @@ def _ev_ensure_split(sleap_py, model_dir, gt_slp, split):
     npz_path = model_dir / f'metrics.{split}.0.npz'
 
     if not Path(gt_slp).exists():
-        print(f"  [{split.upper()}] Ground-truth file not found: {gt_slp} — skipping.")
+        print(f"  [{split.upper()}] Ground-truth file not found: {gt_slp}. Skipping.")
         return
 
     # Verify training_config.yaml exists (upfront reconstruction already attempted)
     _has_cfg = ((model_dir / 'training_config.yaml').exists() or
                 (model_dir / 'training_config.json').exists())
     if not _has_cfg:
-        print(f"  [{split.upper()}] Skipping — training_config.yaml could not be reconstructed.")
+        print(f"  [{split.upper()}] Skipping: training_config.yaml could not be reconstructed.")
         return
 
     # Ensure labels_gt copy exists in model folder (required by eval command)
@@ -631,20 +661,26 @@ def _ev_ensure_split(sleap_py, model_dir, gt_slp, split):
     # Run inference if predictions are missing
     if not pr_path.exists():
         if sleap_py is None:
-            print(f"  [{split.upper()}] sleap_nn not found — cannot auto-generate predictions.")
+            print(f"  [{split.upper()}] sleap_nn not found. Cannot auto-generate predictions.")
             print( "             Install sleap-nn or run training to completion.")
             return
         print(f"  [{split.upper()}] Running inference (sleap_nn track) …", flush=True)
-        _r = _evsubp.run(
+        # Stream output line by line (was subprocess.run(capture_output=True),
+        # which blocked and hid all progress until inference finished; on CPU
+        # that means hours of an apparently frozen log box).
+        _p = _evsubp.Popen(
             [str(sleap_py), '-m', 'sleap_nn.cli', 'track',
              '--data_path',   str(gt_slp),
              '--model_paths', str(model_dir),
              '--output_path', str(pr_path),
              '--device',      'cpu'],
-            capture_output=True, text=True,
+            stdout=_evsubp.PIPE, stderr=_evsubp.STDOUT, text=True, bufsize=1,
         )
-        if _r.returncode != 0:
-            print(f"  [{split.upper()}] Inference failed:\\n{_r.stderr[-800:]}")
+        for _ln in _p.stdout:
+            print(_ln, end='', flush=True)
+        _p.wait()
+        if _p.returncode != 0:
+            print(f"  [{split.upper()}] Inference failed (exit code {_p.returncode}). See output above.")
             return
         print(f"  [{split.upper()}] Predictions saved  → {pr_path.name}")
 
@@ -669,7 +705,7 @@ def _ev_ensure_split(sleap_py, model_dir, gt_slp, split):
             # object references differ between GT and PR files (known bug in
             # sleap_nn 0.1.3).  Compute OKS / mAP / mAR / PCK / visibility
             # ourselves from the raw coordinates via sleap_io.
-            print(f"  [{split.upper()}] CLI eval failed — computing metrics in Python …", flush=True)
+            print(f"  [{split.upper()}] CLI eval failed: computing metrics in Python …", flush=True)
             try:
                 import sleap_io as _sio, numpy as _np
 
@@ -764,14 +800,14 @@ def _ev_needs_work(s):
         return True
     if not npz.exists():
         return True
-    # Treat empty npz (old failure sentinel) as missing — always retry
+    # Treat empty npz (old failure sentinel) as missing: always retry
     try:
         import numpy as _np_chk
         _d = _np_chk.load(str(npz), allow_pickle=True)
         if len(_d.files) == 0:
             return True
     except Exception:
-        return True  # corrupt file — retry
+        return True  # corrupt file, retry
     return False
 
 _ev_missing = [s for s in ('train', 'val', 'test') if _ev_needs_work(s)]
@@ -785,13 +821,13 @@ if _ev_missing:
     if _ev_missing_npz:
         print(f"Missing SLEAP metrics for   : {', '.join(s.upper() for s in _ev_missing_npz)}")
     if 'train' in _ev_missing_pr:
-        print("  NOTE: TRAIN inference covers 755 frames — may take several minutes on CPU.")
+        print("  NOTE: TRAIN inference may take several minutes on CPU.")
 
     # Reconstruct training_config.yaml once upfront (avoids redundant scans per split)
     _has_cfg = ((NEW_MODEL_DIR / 'training_config.yaml').exists() or
                 (NEW_MODEL_DIR / 'training_config.json').exists())
     if not _has_cfg:
-        print("training_config.yaml not found — attempting reconstruction …", flush=True)
+        print("training_config.yaml not found: attempting reconstruction …", flush=True)
         _ev_reconstruct_config(NEW_MODEL_DIR)
         print()
 
@@ -812,11 +848,11 @@ if _ev_missing:
         _ev_ensure_split(_ev_sleap_py, NEW_MODEL_DIR, _ev_gt_map[_ev_split], _ev_split)
     print()
 else:
-    _ev_sleap_py = None   # not needed — all files present
+    _ev_sleap_py = None   # not needed, all files present
 '''
 
 
-# ── Metrics export step — saves sm/cm results to CSV for GUI display ──────────
+# ── Metrics export step: saves sm/cm results to CSV for GUI display ──────────
 
 _METRICS_EXPORT_STEP = '''
 import pandas as _pd, numpy as _np
@@ -844,11 +880,10 @@ for _split in ('val', 'test', 'train'):
         _row['MPE (px)']     = round(float(_np.nanmean(_cm_res['mpe'])),    3)
         _row['FP rate (%)']  = round(float(_cm_res['global_fp'] * 100),     2)
         _row['FN rate (%)']  = round(float(_cm_res['global_fn'] * 100),     2)
-        _row['TD (px/fr)']   = round(float(_np.nanmean(_cm_res['td'])),     3)
         _row['CR_frame (%)'] = round(float(_cm_res['cr_frame']),            1)
         _row['CR_kp (%)']    = round(float(_np.nanmean(_cm_res['cr_kp'])),  1)
     else:
-        for _col in ['MPE (px)', 'FP rate (%)', 'FN rate (%)', 'TD (px/fr)', 'CR_frame (%)', 'CR_kp (%)']:
+        for _col in ['MPE (px)', 'FP rate (%)', 'FN rate (%)', 'CR_frame (%)', 'CR_kp (%)']:
             _row[_col] = float('nan')
     _rows.append(_row)
 
@@ -859,7 +894,7 @@ print(f"Metrics table saved → eval_metrics_summary.csv")
 
 
 def al_eval_only_script(nb_path: Path, flags: dict, model_name: str) -> Path:
-    """Standalone evaluation for any model — metrics + plots, no comparison.
+    """Standalone evaluation for any model: metrics + plots, no comparison.
 
     Auto-generates missing prediction files (labels_pr/gt/metrics) via
     sleap_nn CLI if needed, then runs the eval cell without the comparison
@@ -929,7 +964,7 @@ _DIR_HINTS = [
 def _extract_video_paths_from_slp(slp: Path) -> list[str]:
     """Read active video paths from a .slp file using h5py (not raw bytes).
 
-    Reads the live dataset values only — orphaned HDF5 heap data (left over
+    Reads the live dataset values only: orphaned HDF5 heap data (left over
     from previous writes) is ignored automatically.  Falls back to raw-bytes
     regex if h5py is unavailable.
     """
@@ -975,7 +1010,7 @@ def _extract_video_paths_from_slp(slp: Path) -> list[str]:
 def scan_slp_paths(nb_dir: Path, root_dir: Path | None = None) -> list[dict]:
     """Scan ALL .slp files (not .pkg.slp) in the project for broken video paths.
 
-    Reads only active dataset values via h5py — orphaned HDF5 heap data from
+    Reads only active dataset values via h5py: orphaned HDF5 heap data from
     previous writes is never reported as broken.
 
     Four categories are scanned:
@@ -1156,7 +1191,7 @@ def fix_slp_paths(slp_path: Path, replacements: dict) -> tuple[bool, str]:
 
             if n_changed == 0:
                 return False, (
-                    "paths not found inside videos_json — "
+                    "paths not found inside videos_json: "
                     "the stored path string does not match any replacement key"
                 )
 
@@ -1202,6 +1237,6 @@ def fix_slp_paths(slp_path: Path, replacements: dict) -> tuple[bool, str]:
         return True, f"Updated {n_changed} video reference(s)"
 
     except ImportError:
-        return False, "h5py not installed — run: pip install h5py"
+        return False, "h5py not installed. Run: pip install h5py"
     except Exception as e:
         return False, f"h5py error: {e}"

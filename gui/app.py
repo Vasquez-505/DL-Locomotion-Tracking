@@ -1,4 +1,4 @@
-"""Drosophila DL Tracking Suite — navigation entrypoint."""
+"""Drosophila DL Tracking Suite: navigation entrypoint."""
 import base64
 import streamlit as st
 from pathlib import Path
@@ -84,7 +84,7 @@ def _home():
     st.markdown(
         f'<h3 style="color:{TEXT};margin-bottom:6px">Pipeline Overview</h3>'
         f'<p style="color:{MUTED};font-size:0.88em;line-height:1.7;margin-bottom:18px">'
-        f'The <strong style="color:{TEXT}">Bulk Pipeline</strong> automates the full journey from raw FTIR video to gait analysis — '
+        f'The <strong style="color:{TEXT}">Bulk Pipeline</strong> automates the full journey from raw FTIR video to gait analysis: '
         f'the DL model extracts ground-contact predictions frame by frame, which are reviewed and corrected in SLEAP, '
         f'then exported to FlyWalker for stance/swing analysis and result graphs. '
         f'The <strong style="color:{TEXT}">Active Learning loop</strong> uses those corrected labels as new training data '
@@ -138,36 +138,36 @@ def _home():
         )
 
     # ─── SECTION 1 ────────────────────────────────────────────────────────────
-    st.markdown(_section_hdr(PURPLE, "SECTION 1", "DL Model Inference",
+    st.markdown(_section_hdr(PURPLE, "SECTION 1", "Preprocessing and Model Inference",
         "Raw FTIR video &rarr; background-subtracted PNGs &rarr; AVI videos &rarr; ground-contact predictions"),
         unsafe_allow_html=True)
-    p1 = _phase_card("1", "Raw Video Processing",  "BG subtraction &rarr; 3 PNG sets (colormap, no-colormap, raw)", PURPLE)
+    p1 = _phase_card("1", "Background Subtraction", "BG subtraction &rarr; 3 PNG sets (colormap, no-colormap, raw)", PURPLE)
     p2 = _phase_card("2", "Video Export",           "PNG sets &rarr; lossless AVI (FFV1 codec, 250 FPS)", PURPLE)
-    p3 = _phase_card("3", "Pose Estimation",        "SLEAP/ADPT model &rarr; per-frame ground-contact predictions", PURPLE)
+    p3 = _phase_card("3", "DL Model Inference",     "SLEAP/Local model &rarr; per-frame ground-contact predictions", PURPLE)
     st.markdown(_row(p1, p2, p3), unsafe_allow_html=True)
     _cl, _ = st.columns([2, 8])
     with _cl: st.page_link("pages/1_Bulk_Pipeline.py", label="Open Bulk Pipeline →")
 
-    st.markdown(_arrow(PURPLE, TEAL, "Inference complete — open SLEAP to review predictions"), unsafe_allow_html=True)
+    st.markdown(_arrow(PURPLE, TEAL, "Inference complete: open SLEAP to review predictions"), unsafe_allow_html=True)
 
     # ─── SECTION 2 ────────────────────────────────────────────────────────────
-    st.markdown(_section_hdr(TEAL, "SECTION 2", "Predictions Inspection",
+    st.markdown(_section_hdr(TEAL, "SECTION 2", "Prediction Inspection and Validation",
         "Manual correction in SLEAP &rarr; trim frames &rarr; validate for FlyWalker"),
         unsafe_allow_html=True)
-    p4 = _phase_card("4", "SLEAP Correction",       "Review keypoints frame by frame. Correct leg contacts (FTIR: only ground-touching legs visible).", TEAL)
-    p5 = _phase_card("5", "Trim Frames",            "Remove trailing frames where fly stopped. Optional — skip if full video is usable.", TEAL)
+    p4 = _phase_card("4", "Manual Correction (SLEAP GUI)", "Review keypoints frame by frame. Correct leg contacts (FTIR: only ground-touching legs visible).", TEAL)
+    p5 = _phase_card("5", "Trim Frames",            "Remove trailing frames where fly stopped. Optional: skip if full video is usable.", TEAL)
     p6 = _phase_card("6", "Pre-flight Validation",  "Check leg event counts, L/R completeness, polygon crash risk. Fix FAILs before Section 3.", TEAL)
     st.markdown(_row(p4, p5, p6), unsafe_allow_html=True)
 
-    st.markdown(_arrow(TEAL, GREEN, "Corrections saved — proceed to FlyWalker analysis"), unsafe_allow_html=True)
+    st.markdown(_arrow(TEAL, GREEN, "Corrections saved: proceed to FlyWalker analysis"), unsafe_allow_html=True)
 
     # ─── SECTION 3 ────────────────────────────────────────────────────────────
-    st.markdown(_section_hdr(GREEN, "SECTION 3", "FlyWalker Analysis",
+    st.markdown(_section_hdr(GREEN, "SECTION 3", "FlyWalker Output Generation",
         "Corrected labels &rarr; TRACKS.mat &rarr; MATLAB FlyWalker &rarr; gait analysis graphs"),
         unsafe_allow_html=True)
-    p7  = _phase_card("7",  "Export Labels",    ".slp &rarr; .analysis.h5 via sleap-convert", GREEN)
-    p8  = _phase_card("8",  "Extract Tracks",   "Body position, orientation &amp; leg contacts from HDF5", GREEN)
-    p9  = _phase_card("9",  "Write MATLAB Data", "Generate TRACKS.mat in FlyWalker struct format", GREEN)
+    p7  = _phase_card("7",  "Predictions Analysis Export", ".slp &rarr; .analysis.h5 via sleap-convert", GREEN)
+    p8  = _phase_card("8",  "Parameter Calculation",       "Body position, orientation &amp; leg contacts from HDF5", GREEN)
+    p9  = _phase_card("9",  "TRACKS.mat Assembly",         "Generate TRACKS.mat in FlyWalker struct format", GREEN)
     p10 = _phase_card("10", "FlyWalker Analysis","MATLAB &rarr; stance/swing graphs + ResultSummary.xlsx", GREEN)
     st.markdown(_row(p7, p8, p9, p10), unsafe_allow_html=True)
 
@@ -190,7 +190,7 @@ def _home():
     a1 = _phase_card("1", "Verify Labels",    "Check corrected .slp files and frame counts", AMBER, step=True)
     a2 = _phase_card("2", "Merge Datasets",   "Merge TRAIN + new videos, embed frames &rarr; .pkg.slp", AMBER, step=True)
     a3 = _phase_card("3", "Inspect (opt.)",   "Visual check in SLEAP GUI before training", AMBER, step=True)
-    a4 = _phase_card("4", "Build Config",     "Fine-tune YAML: &frac110; LR, pretrained best.ckpt weights", AMBER, step=True)
+    a4 = _phase_card("4", "Build Config",     "Fine-tune YAML: LR &divide; 10, pretrained best.ckpt weights", AMBER, step=True)
     a5 = _phase_card("5", "HW Check (opt.)",  "Report CPU / GPU / RAM for training", AMBER, step=True)
     a6 = _phase_card("6", "Train",            "Fine-tune locally (CPU) or prepare Colab zip (GPU)", AMBER, step=True)
     a7 = _phase_card("7", "Evaluate",         "MPE, FP/FN rates, CR_frame vs base model", AMBER, step=True)
@@ -222,16 +222,16 @@ def _home():
     st.markdown(
         """
 **Processing a new video batch:**
-1. Go to **Bulk Pipeline → Section 1** — run Phases 1–3 to generate predictions.
+1. Go to **Bulk Pipeline → Section 1**: run Phases 1–3 to generate predictions.
 2. Open SLEAP (Phase 4) and correct any wrong or missing leg contacts frame by frame.
 3. Optionally trim trailing frames (Phase 5) if the fly stopped before the video ended.
-4. Run **Pre-flight Validation (Phase 6)** — fix any FAILs before continuing.
-5. Run **Section 3** — export labels, build TRACKS.mat, and run FlyWalker analysis.
+4. Run **Pre-flight Validation (Phase 6)**: fix any FAILs before continuing.
+5. Run **Section 3**: export labels, build TRACKS.mat, and run FlyWalker analysis.
 
 **Improving the model (Active Learning):**
 - After correcting predictions in SLEAP, go to **Active Learning**.
 - Steps 1–2 merge the corrected labels with the original training set.
-- Steps 4–5 fine-tune the model and evaluate it against the baseline.
+- Steps 4–6 build the fine-tune config, check hardware, and run training; Step 7 evaluates against the baseline.
 - Set the new model as `MODEL_NAME` in Section 1, Phase 3 for the next batch.
         """
     )
@@ -254,8 +254,8 @@ def _home():
             f'<div class="ft-diag-hint" style="color:{MUTED};font-size:0.8em;margin-bottom:10px">'
             f'Each .slp label file embeds absolute paths to its source videos. '
             f'If you move or rename the project folder, those paths break. '
-            f'This scans all four locations — Dataset, Model Labels, Predictions, and '
-            f'SLEAP Training — and re-links any broken paths to the current '
+            f'This scans all four locations (Dataset, Model Labels, Predictions, and '
+            f'SLEAP Training) and re-links any broken paths to the current '
             f'<code>Videos/</code> folder automatically.'
             f'</div>',
             unsafe_allow_html=True,
@@ -315,12 +315,12 @@ def _home():
                         if r["all_ok"]:
                             icon, color, detail = "✓", GREEN, "all paths OK"
                         elif r["all_fixable"]:
-                            icon, color, detail = "⚠", AMBER, f"{len(r['paths_broken'])} broken — fixable"
+                            icon, color, detail = "⚠", AMBER, f"{len(r['paths_broken'])} broken, fixable"
                         else:
                             unfixable = len(r["paths_broken"]) - len(r["paths_fixable"])
                             icon, color, detail = "✗", "#ef4444", (
                                 f"{len(r['paths_broken'])} broken"
-                                + (f", {unfixable} video(s) not found in Videos/" if unfixable else " — fixable")
+                                + (f", {unfixable} video(s) not found in Videos/" if unfixable else ", fixable")
                             )
 
                         st.markdown(
@@ -328,7 +328,7 @@ def _home():
                             f'padding:2px 0 2px 16px;">'
                             f'<span class="ft-diag-icon" style="color:{color}">{icon}</span> '
                             f'<span class="ft-diag-path" style="color:{TEXT}">{rel}</span> '
-                            f'<span class="ft-diag-det" style="color:{MUTED}">— {detail}</span>'
+                            f'<span class="ft-diag-det" style="color:{MUTED}">: {detail}</span>'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
@@ -364,10 +364,10 @@ def _home():
                             st.success(f"Fixed {fixed} file(s). Re-scan to verify.")
                             st.session_state.pop("slp_scan_results", None)
                         if failed:
-                            st.error(f"{failed} file(s) could not be fixed — see warnings above.")
+                            st.error(f"{failed} file(s) could not be fixed. See warnings above.")
                 elif any_broken_global:
                     st.warning(
-                        "Some broken paths could not be resolved — the source video was not "
+                        "Some broken paths could not be resolved. The source video was not "
                         "found in any Videos/ subfolder. Move the video there and re-scan."
                     )
                 else:

@@ -26,7 +26,7 @@ _load_state(st.session_state)
 # Page-specific styles
 st.markdown(f"""
 <style>
-/* ── Workflow summary card — light-mode text fix ────────────────────────── */
+/* ── Workflow summary card: light-mode text fix ────────────────────────── */
 .flytrack-light .al-wf-text {{ color: #334155 !important; }}
 
 /* ── Metrics table (HTML, replaces st.dataframe) ─────────────────────── */
@@ -82,7 +82,7 @@ st.markdown(f"""
     font-size: 0.82em !important;
     padding: 0 !important;
 }}
-/* ── Sidebar video multiselect — amber section colour ───────────────────── */
+/* ── Sidebar video multiselect: amber section colour ───────────────────── */
 [data-testid="stSidebar"] [data-testid="stMultiSelect"] [data-baseweb="tag"] {{
     background-color: {AMBER}12 !important;
     border-left-color: {AMBER} !important;
@@ -126,7 +126,7 @@ def _poll_inner(key: str):
     """Drain new output, render log, finalize when proc is done.
 
     Called directly from the page body (no fragments).  A full-page rerun
-    loop at the bottom of the script drives the 1-second polling cadence —
+    loop at the bottom of the script drives the 1-second polling cadence,
     only while a proc is active, so the page is completely static when idle.
     """
     proc = _state(f"{key}_proc")
@@ -187,6 +187,10 @@ def _strip_td(text: str) -> str:
     return "\n".join(out)
 
 
+# Cached for 5s: these run on every rerun, and the log-polling loop reruns the
+# whole page ~once a second. Folder contents change only when a step finishes,
+# so a short TTL keeps the list fresh while cutting repeated disk scans.
+@st.cache_data(ttl=5, show_spinner=False)
 def detected_predictions() -> list[str]:
     pred_dir = NB_DIR / "Predictions"
     if not pred_dir.exists():
@@ -197,6 +201,7 @@ def detected_predictions() -> list[str]:
     )
 
 
+@st.cache_data(ttl=5, show_spinner=False)
 def detected_sleap_models() -> list[str]:
     d = NB_DIR / "Models" / "SLEAP_Models"
     if not d.exists():
@@ -220,7 +225,7 @@ def show_run_name():
         )
 
 
-# ── Configuration — sidebar ───────────────────────────────────────────────────
+# ── Configuration: sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown(
         '<div style="color:white;font-weight:600;font-size:0.72em;'
@@ -241,7 +246,7 @@ with st.sidebar:
     else:
         base_model = st.text_input(
             "Base model folder name",
-            value="drosophila_unet64_setB_260407_092817",
+            value=st.session_state.get("al_base_model", "drosophila_unet64_setB_260407_092817"),
             key="al_base_model",
         )
 
@@ -263,7 +268,7 @@ with st.sidebar:
         help="Must have been through Phases 1–4 and corrected in SLEAP.",
     )
     if not avail_preds:
-        st.caption("No prediction folders found — run Bulk Pipeline first.")
+        st.caption("No prediction folders found. Run Bulk Pipeline first.")
     else:
         st.caption(f"{len(new_videos)} video(s) selected")
 
@@ -292,22 +297,27 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── Advanced settings (collapsed — defaults work for most runs) ───────────────
-with st.expander("Advanced settings — dataset paths & training parameters", expanded=True):
+# ── Advanced settings (collapsed: defaults work for most runs) ───────────────
+with st.expander("Advanced settings: dataset paths & training parameters", expanded=True):
     st.markdown(
         f'<p style="color:{MUTED};font-size:0.82em;margin:2px 0 12px">'
-        f'Defaults are correct for Set B. Only edit if your dataset filenames or '
-        f'hyperparameters differ.</p>',
+        f'Edit if your dataset filenames or hyperparameters differ.</p>',
         unsafe_allow_html=True,
     )
     _dc1, _dc2, _dc3 = st.columns(3)
     with _dc1:
-        orig_train = st.text_input("TRAIN .slp",   value="Drosophila_TRAIN_set_setB.slp",   key="al_orig_train")
+        orig_train = st.text_input("TRAIN .slp",
+                                   value=st.session_state.get("al_orig_train", "Drosophila_TRAIN_set_setB.slp"),
+                                   key="al_orig_train")
     with _dc2:
-        orig_val   = st.text_input("VAL .slp",     value="Drosophila_VAL_set_setB.slp",     key="al_orig_val",
+        orig_val   = st.text_input("VAL .slp",
+                                   value=st.session_state.get("al_orig_val", "Drosophila_VAL_set_setB.slp"),
+                                   key="al_orig_val",
                                    help=".pkg.slp is generated automatically from the .slp if not already present.")
     with _dc3:
-        orig_test  = st.text_input("TEST .slp",    value="Drosophila_TEST_set_setB.slp",    key="al_orig_test")
+        orig_test  = st.text_input("TEST .slp",
+                                   value=st.session_state.get("al_orig_test", "Drosophila_TEST_set_setB.slp"),
+                                   key="al_orig_test")
 
     _tc1, _tc2, _tc3 = st.columns([3, 1, 1])
     with _tc1:
@@ -315,15 +325,15 @@ with st.expander("Advanced settings — dataset paths & training parameters", ex
         _mode_sel  = st.segmented_control(
             "Training mode",
             options=_mode_opts,
-            default="colab",
+            default="local",
             key="al_mode",
             help="local = CPU training here | colab = prepare zip for Google Colab GPU",
         )
         mode = _mode_sel if _mode_sel else "colab"
     with _tc2:
-        max_epochs = st.number_input("Max epochs", min_value=1, max_value=500, value=50, step=1, key="al_epochs")
+        max_epochs = st.number_input("Max epochs", min_value=1, max_value=500, value=st.session_state.get("al_epochs", 50), step=1, key="al_epochs")
     with _tc3:
-        batch_size = st.number_input("Batch size", min_value=1, max_value=64,  value=6,  step=1, key="al_batch")
+        batch_size = st.number_input("Batch size", min_value=1, max_value=64,  value=st.session_state.get("al_batch", 6),  step=1, key="al_batch")
 
 # ── FLAGS dict ────────────────────────────────────────────────────────────────
 FLAGS = {
@@ -354,7 +364,7 @@ show_run_name()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 1 — Verify corrected labels
+# Step 1: Verify corrected labels
 # ─────────────────────────────────────────────────────────────────────────────
 _s1_status = _state("s1_status", "idle")
 st.markdown(phase_label(AMBER, "1", "Verify Corrected Labels", status_dot(_s1_status, AMBER)), unsafe_allow_html=True)
@@ -389,10 +399,10 @@ if stop_s1:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 2 — Merge datasets + generate .pkg.slp
+# Step 2: Merge datasets + generate .pkg.slp
 # ─────────────────────────────────────────────────────────────────────────────
 _s2_status = _state("s2_status", "idle")
-st.markdown(phase_label(AMBER, "2", "Merge Datasets + Generate .pkg.slp", f"slowest step &nbsp;·&nbsp; {status_dot(_s2_status, AMBER)}"), unsafe_allow_html=True)
+st.markdown(phase_label(AMBER, "2", "Merge Datasets + Generate .pkg.slp", status_dot(_s2_status, AMBER)), unsafe_allow_html=True)
 with st.expander("Details", expanded=False):
     st.markdown(
         """
@@ -402,8 +412,6 @@ with st.expander("Details", expanded=False):
         - Generates **RUN_NAME** `drosophila_<backbone>_ft_<N>frames_<timestamp>`
         - Embeds video frames → `Drosophila_TRAIN_set_setB_<N>frames.pkg.slp` (needed for Colab)
         - Writes HDF5 sanity check
-
-        > **Slowest step** — embedding frames can take 1–5 minutes.
         """
     )
 
@@ -430,11 +438,11 @@ show_run_name()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3 — Inspect merged dataset in SLEAP (optional)
+# Step 3: Inspect merged dataset in SLEAP (optional)
 # ─────────────────────────────────────────────────────────────────────────────
 _s3_status = _state("s3_status", "idle")
 st.markdown(phase_label(AMBER, "3", "Inspect Merged Dataset in SLEAP", f"optional &nbsp;·&nbsp; {status_dot(_s3_status, AMBER)}"), unsafe_allow_html=True)
-with st.expander("▸ Run (optional — click to expand)", expanded=False):
+with st.expander("▸ Run (optional: click to expand)", expanded=False):
     st.markdown(
         "Opens the merged `.slp` in the SLEAP GUI for visual verification "
         "before training."
@@ -480,7 +488,7 @@ with st.expander("▸ Run (optional — click to expand)", expanded=False):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 4 — Build fine-tune config YAML
+# Step 4: Build fine-tune config YAML
 # ─────────────────────────────────────────────────────────────────────────────
 _s4_status = _state("s4_status", "idle")
 st.markdown(phase_label(AMBER, "4", "Build Fine-tune Config YAML", status_dot(_s4_status, AMBER)), unsafe_allow_html=True)
@@ -520,11 +528,11 @@ if stop_s4:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 5 — Hardware check (optional)
+# Step 5: Hardware check (optional)
 # ─────────────────────────────────────────────────────────────────────────────
 _s5_status = _state("s5_status", "idle")
 st.markdown(phase_label(AMBER, "5", "Hardware Check", f"optional &nbsp;·&nbsp; {status_dot(_s5_status, AMBER)}"), unsafe_allow_html=True)
-with st.expander("▸ Run (optional — click to expand)", expanded=False):
+with st.expander("▸ Run (optional: click to expand)", expanded=False):
     st.markdown("Reports CPU, RAM, and GPU VRAM available for training.")
     _poll_inner("s5")
     check_s5 = stop_s5 = False
@@ -548,7 +556,7 @@ with st.expander("▸ Run (optional — click to expand)", expanded=False):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 6 — Train
+# Step 6: Train
 # ─────────────────────────────────────────────────────────────────────────────
 _s6_status = _state("s6_status", "idle")
 st.markdown(phase_label(AMBER, "6", "Train", status_dot(_s6_status, AMBER)), unsafe_allow_html=True)
@@ -558,10 +566,10 @@ if mode == "local":
         st.markdown(
             "Runs `sleap_nn.cli train single_instance_ft.yaml` in the `sleap` environment. "
             "Uses CPU (or GPU if CUDA is available). Training streams live. "
-            "Early stopping is active — may finish before MAX_EPOCHS."
+            "Early stopping is active: may finish before MAX_EPOCHS."
         )
 else:
-    with st.expander("Colab mode — what happens", expanded=False):
+    with st.expander("Colab mode: what happens", expanded=False):
         st.markdown(
             """
             Creates `colab_upload.zip` in `SLEAP_Dataset/` containing:
@@ -602,7 +610,7 @@ if stop_s6:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 7 — Evaluate & compare results
+# Step 7: Evaluate & compare results
 # ─────────────────────────────────────────────────────────────────────────────
 _s7_status = _state("s7_status", "idle")
 st.markdown(phase_label(AMBER, "7", "Evaluate &amp; Compare Results", status_dot(_s7_status, AMBER)), unsafe_allow_html=True)
@@ -611,12 +619,9 @@ with st.expander("What this generates", expanded=False):
         """
         - **Loss curves** (train / val loss, LR schedule)
         - **SLEAP built-in metrics** (mOKS, mAP, mAR) for train / val / test
-        - **Custom metrics** (MPE per keypoint, FP/FN contact rates, tracking drift,
-          CR_kp, CR_frame)
-        - **Comparison table (VAL)** — fine-tuned vs base model, 20+ metrics
-        - **Comparison table (TEST)** — if TEST pkg available
-
-        Results stream to the log. For rich plots, open the notebook directly.
+        - **Custom metrics** (MPE per keypoint, FP/FN contact rates, CR_kp, CR_frame)
+        - **Comparison table (VAL)**: fine-tuned vs base model, 15 metrics
+        - **Comparison table (TEST)**: if TEST pkg available
         """
     )
 
@@ -681,7 +686,7 @@ st.markdown(
     f'<div style="color:{AMBER};font-size:0.65em;font-weight:700;text-transform:uppercase;'
     f'letter-spacing:0.12em">Inspect Model Results</div>'
     f'<div style="color:{MUTED};font-size:0.78em;border-left:1px solid {AMBER}25;'
-    f'padding-left:10px">Browse any trained model — view files, training log, and evaluation outputs</div>'
+    f'padding-left:10px">Browse any trained model: view files, training log, and evaluation outputs</div>'
     f'</div>',
     unsafe_allow_html=True,
 )
@@ -699,7 +704,7 @@ else:
         key="al_inspect_sel",
     )
     if _sel_model:
-        # Detect model switch — wipe stale evaluation log/status from previous model
+        # Detect model switch: wipe stale evaluation log/status from previous model
         _prev_inspect = st.session_state.get("al_inspect_sel_prev")
         if _prev_inspect is not None and _prev_inspect != _sel_model:
             for _k in ("ie_status", "ie_log"):
@@ -714,11 +719,17 @@ else:
             "training_config.yaml":         ("Training config",       MUTED),
             "training_log.csv":             ("Training log",          MUTED),
             "training_curves.png":          ("Loss curves",           MUTED),
+            "eval_loss_curves.png":         ("Loss curves",           MUTED),
+            "eval_metrics_summary.csv":     ("Metrics summary",       MUTED),
+            "summary_metrics.csv":          ("Metrics summary",       MUTED),
             "eval_kp_metrics_val.png":      ("VAL keypoint plot",     MUTED),
             "eval_kp_metrics_test.png":     ("TEST keypoint plot",    MUTED),
             "eval_kp_metrics_train.png":    ("TRAIN keypoint plot",   MUTED),
             "comparison_vs_base.csv":       ("VAL comparison table",  MUTED),
             "comparison_vs_base_test.csv":  ("TEST comparison table", MUTED),
+            "per_keypoint_metrics_val.csv":   ("VAL per-keypoint table",   MUTED),
+            "per_keypoint_metrics_test.csv":  ("TEST per-keypoint table",  MUTED),
+            "per_keypoint_metrics_train.csv": ("TRAIN per-keypoint table", MUTED),
             "labels_pr.val.0.slp":          ("VAL predictions",       MUTED),
             "labels_pr.test.0.slp":         ("TEST predictions",      MUTED),
             "metrics.val.0.npz":            ("VAL SLEAP metrics",     MUTED),
@@ -793,10 +804,16 @@ else:
                 st.caption("No training log found.")
 
         # ── Row 2: evaluation results (always shown when files exist) ────────
-        _has_any_eval = (_mdir / "eval_kp_metrics_val.png").exists()
+        _has_any_eval = any((
+            (_mdir / "eval_kp_metrics_val.png").exists(),
+            (_mdir / "training_curves.png").exists(),
+            (_mdir / "eval_loss_curves.png").exists(),
+            (_mdir / "eval_metrics_summary.csv").exists(),
+            (_mdir / "summary_metrics.csv").exists(),
+        ))
 
         def _safe_image(path, **kwargs):
-            """Display image via st.image(bytes) — bytes are hashed by Streamlit to
+            """Display image via st.image(bytes): bytes are hashed by Streamlit to
             generate a unique URL per content, so switching models always shows the
             new model's plots even when filenames are identical.  st.image() also
             provides the native Streamlit expand button (click to fullscreen).
@@ -811,9 +828,12 @@ else:
                            "Regenerate evaluation to rebuild it.")
 
         if _has_any_eval:
-            # Loss / training curves
-            _curves = _mdir / "training_curves.png"
-            if _curves.exists():
+            # Loss / training curves (accept either filename)
+            _curves = next(
+                (p for p in [_mdir / "training_curves.png", _mdir / "eval_loss_curves.png"] if p.exists()),
+                None,
+            )
+            if _curves is not None:
                 st.markdown(
                     f'<div style="color:{MUTED};font-size:0.75em;font-weight:600;'
                     f'text-transform:uppercase;letter-spacing:0.08em;margin:18px 0 8px">'
@@ -822,9 +842,12 @@ else:
                 )
                 _safe_image(_curves, use_container_width=True)
 
-            # Metrics summary table
-            _metrics_csv = _mdir / "eval_metrics_summary.csv"
-            if _metrics_csv.exists():
+            # Metrics summary table (accept both filename variants and both CSV orientations)
+            _metrics_csv = next(
+                (p for p in [_mdir / "eval_metrics_summary.csv", _mdir / "summary_metrics.csv"] if p.exists()),
+                None,
+            )
+            if _metrics_csv is not None:
                 try:
                     import pandas as _pd
                     _df_m = _pd.read_csv(_metrics_csv)
@@ -834,15 +857,52 @@ else:
                         f'Evaluation Metrics</div>',
                         unsafe_allow_html=True,
                     )
-                    _df_t = _df_m.set_index("Split").T.rename_axis("Metric").reset_index()
+                    # eval_metrics_summary.csv: rows=splits with "Split" col → transpose
+                    # summary_metrics.csv: rows=metrics, first col unnamed → rename to "Metric"
+                    if "Split" in _df_m.columns:
+                        _df_t = _df_m.set_index("Split").T.rename_axis("Metric").reset_index()
+                    else:
+                        _df_t = _df_m.rename(columns={_df_m.columns[0]: "Metric"})
+                    _HL_KW   = {"fp_rate", "fn_rate", "dist_avg", "p50", "p90", "p95", "mpe"}
+                    _PRIMARY = "#4ade80"  # bright green, primary metric
+                    def _row_tier(name):
+                        nl = str(name).lower()
+                        if "npz" in nl:
+                            return "normal"
+                        if "cr_kp" in nl:
+                            return "primary"
+                        if any(kw in nl for kw in _HL_KW):
+                            return "highlight"
+                        return "normal"
+
                     _thead_html = "".join(f'<th>{_html.escape(str(_c))}</th>' for _c in _df_t.columns)
-                    _tbody_html = "".join(
-                        "<tr>" + "".join(
-                            f'<td>{_html.escape(str(_v)) if _v is not None and str(_v) != "nan" else "—"}</td>'
-                            for _v in _row
-                        ) + "</tr>"
-                        for _row in _df_t.itertuples(index=False, name=None)
-                    )
+                    _tbody_rows = []
+                    for _row in _df_t.itertuples(index=False, name=None):
+                        _tier = _row_tier(_row[0])
+                        if _tier == "primary":
+                            _tr_style = f'background:{_PRIMARY}30;'
+                        elif _tier == "highlight":
+                            _tr_style = f'background:{AMBER}28;'
+                        else:
+                            _tr_style = 'opacity:0.50;'
+                        _cells = "".join(
+                            (f'<td style="color:{_PRIMARY};font-weight:800;border-left:4px solid {_PRIMARY};padding-left:7px">'
+                             f'{_html.escape(str(_v))}</td>'
+                             if _i == 0 and _tier == "primary" else
+                             f'<td style="color:{AMBER};font-weight:700;border-left:3px solid {AMBER};padding-left:7px">'
+                             f'{_html.escape(str(_v))}</td>'
+                             if _i == 0 and _tier == "highlight" else
+                             f'<td style="color:{_PRIMARY};font-weight:600">'
+                             f'{_html.escape(str(_v)) if str(_v) != "nan" else "N/A"}</td>'
+                             if _tier == "primary" else
+                             f'<td style="color:{AMBER};font-weight:600">'
+                             f'{_html.escape(str(_v)) if str(_v) != "nan" else "N/A"}</td>'
+                             if _tier == "highlight" else
+                             f'<td>{_html.escape(str(_v)) if str(_v) != "nan" else "N/A"}</td>')
+                            for _i, _v in enumerate(_row)
+                        )
+                        _tbody_rows.append(f'<tr style="{_tr_style}">{_cells}</tr>')
+                    _tbody_html = "".join(_tbody_rows)
                     st.markdown(
                         f'<table class="ft-metrics-tbl"><thead><tr>{_thead_html}</tr></thead>'
                         f'<tbody>{_tbody_html}</tbody></table>',
@@ -851,7 +911,7 @@ else:
                 except Exception:
                     pass
 
-            # Per-keypoint metric plots — VAL and TEST side by side if both exist
+            # Per-keypoint metric plots: VAL and TEST side by side if both exist
             _kp_val   = _mdir / "eval_kp_metrics_val.png"
             _kp_test  = _mdir / "eval_kp_metrics_test.png"
             _kp_train = _mdir / "eval_kp_metrics_train.png"
@@ -875,7 +935,7 @@ else:
             if _kp_train.exists():
                 _safe_image(_kp_train, use_container_width=True, caption="TRAIN set")
 
-        # ── Regenerate button — always visible ────────────────────────────────
+        # ── Regenerate button: always visible ────────────────────────────────
         _ie_status = _state("ie_status", "idle")
         _poll_inner("ie")
 
@@ -908,10 +968,13 @@ else:
             st.rerun()
 
 _save_state(st.session_state)
+if "_al_ready" not in st.session_state:
+    st.session_state["_al_ready"] = True
+    st.rerun()
 
 # ── Auto-rerun while any subprocess is active ─────────────────────────────────
 # Drives the live-log polling cadence without fragments (which cause dimming).
-# When no proc is running the page is completely static — no timer, no flicker.
+# When no proc is running the page is completely static: no timer, no flicker.
 _POLL_KEYS = ("s1", "s2", "s3", "s4", "s5", "s6", "s7", "ie")
 if any(_state(f"{k}_proc") is not None for k in _POLL_KEYS):
     import time as _time

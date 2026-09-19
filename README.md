@@ -7,8 +7,8 @@ tracking from FTIR high-speed video, replacing the auto-detection step in the
 MATLAB **FlyWalker** gait analysis software.
 
 MSc thesis project (Mechanical Engineering, Design of Mechatronic Systems,
-IST Lisboa), supervised by Prof. Rui Moura Coelho (IST) and Prof. César Mendes
-(NOVA Medical School).
+IST Lisboa), supervised by Prof. Dr. Rui Moura Coelho (IST) and Prof. Dr.
+César Mendes (NOVA Medical School).
 
 ## Background
 
@@ -52,24 +52,53 @@ thorax, abdomen, and six leg tips).
 
 ## Setup
 
-Requires Python 3.10+ with a conda environment containing at minimum:
+### 1. Prerequisites
 
+- [Anaconda or Miniconda](https://docs.conda.io/en/latest/miniconda.html), Python 3.11-3.13
+- MATLAB (only invoked in Phase 10, to run the FlyWalker analysis)
+- Optional: an NVIDIA GPU + CUDA driver ≥520 for local training/inference;
+  the GUI and Colab-based training work fine without one
+
+### 2. Clone the repository
+
+```bash
+git clone https://github.com/Vasquez-505/DL-Locomotion-Tracking.git
+cd DL-Locomotion-Tracking
 ```
-streamlit  sleap-nn  sleap-io  torch  torchvision  opencv-python
-h5py  scipy  imageio[ffmpeg]  pillow  pandas  numpy  pyyaml
+
+### 3. Create the environment
+
+```bash
+conda create -n flytrack python=3.11 -y
+conda activate flytrack
+
+# torch: pick ONE of the following
+pip install torch==2.11.0+cpu torchvision==0.26.0+cpu --index-url https://download.pytorch.org/whl/cpu  # CPU-only
+pip install torch==2.11.0 torchvision==0.26.0                                                            # CUDA GPU
+
+pip install sleap-nn==0.3.1 sleap-io==0.9.2 sleap==1.6.2 h5py==3.16.0 pandas==3.0.2 \
+    matplotlib==3.10.8 psutil==7.0.0 PyYAML==6.0.2 opencv-python==4.13.0.92 \
+    scipy==1.17.1 streamlit==1.56.0 imageio[ffmpeg] pillow
 ```
 
-Model training and fine-tuning run on Google Colab (see the notebooks in
-`Inference_Pipeline/`); local inference and the GUI can run on CPU.
+The exact pins above match `Inference_Pipeline/Installation_requirements.txt`
+(the checkpoints were trained against `sleap-nn==0.3.1` specifically; an
+unpinned install can pull in a version whose config schema no longer matches
+the saved checkpoints). `imageio` and `pillow` are additional runtime
+dependencies of the video-overlay feature not yet captured in that file.
 
-## Running the GUI
+### 4. Launch the GUI
 
 ```bash
 streamlit run gui/app.py
 ```
 
-On Windows, `launch_gui.bat` locates a conda environment with Streamlit
-installed and launches the app automatically.
+On Windows, double-click `launch_gui.bat` instead: it finds any conda
+environment with Streamlit installed (checking `flytrack` first) and launches
+the app automatically, no manual `conda activate` needed.
+
+Model training and fine-tuning run on Google Colab (see the notebooks in
+`Inference_Pipeline/`); local inference and the GUI run fine on CPU.
 
 The GUI has two pages:
 

@@ -1,5 +1,7 @@
 # DL Locomotion Tracking
 
+![Flytrack GUI](cover_drosophila.png)
+
 Deep learning pose estimation for *Drosophila melanogaster* ground-contact leg
 tracking from FTIR high-speed video, replacing the auto-detection step in the
 MATLAB **FlyWalker** gait analysis software.

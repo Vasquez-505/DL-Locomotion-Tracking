@@ -14,7 +14,7 @@
 Inference_Pipeline/Videos/
 
 # ── Images & generated plots ──────────────────────────────────────────────────
-# Exception: gui/assets/ logos are needed by the Streamlit UI
+# Exception: gui/assets/ logos are needed by the Streamlit UI; cover_drosophila.png is the README cover
 *.png
 *.jpg
 *.jpeg
@@ -23,6 +23,7 @@ Inference_Pipeline/Videos/
 *.tiff
 !gui/assets/*.png
 !gui/assets/*.jpg
+!cover_drosophila.png
 
 # ── Embedded SLP files (video frames baked in — 100 MB+) ─────────────────────
 *.pkg.slp

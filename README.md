@@ -10,6 +10,31 @@ MSc thesis project (Mechanical Engineering, Design of Mechatronic Systems,
 IST Lisboa), supervised by Prof. Dr. Rui Moura Coelho (IST) and Prof. Dr.
 César Mendes (NOVA Medical School).
 
+## Abstract
+
+*Drosophila melanogaster* shares enough of its locomotor circuitry with humans
+to serve as a model for neuroscience research, from motor control to
+neurodegenerative diseases. Gait analysis in *Drosophila* depends on knowing
+exactly which legs are in contact with the ground at every frame of a
+recording. At NOVA Medical School's Neurogenetics of Locomotion laboratory,
+this measurement is done using the FlyWalker, a tool which detects ground
+contact through Frustrated Total Internal Reflection (FTIR) imaging, where
+tarsal contacts only become visible on contact with a glass surface.
+FlyWalker's threshold-based detection is error-prone, and correcting it
+manually takes much of a researcher's time.
+
+This work replaces that detection with a deep learning pose estimation
+pipeline compatible with NOVA's experimental setup. Across nine tracked
+keypoints on the test set, the best model, a pretrained ConvNeXt backbone,
+cuts FlyWalker's correction rate per keypoint from 14.65% to 5.15%, a
+2.84-fold drop in the predictions to fix by hand, and runs more than three
+times faster on the same hardware. A Streamlit interface, built for the
+laboratory, combines preprocessing, inference, correction, active learning,
+and result generation in one tool. The result is a faster, more accurate
+alternative to the original FlyWalker, expanding the scope of the
+experimental pipeline and accelerating discoveries into the development and
+function of the neuromuscular system in health and disease.
+
 ## Background
 
 FTIR (frustrated total internal reflection) illumination makes a fly's legs
@@ -30,17 +55,22 @@ raw video → background subtraction → DL model inference → SLEAP correction
 3. **Correction** — predictions are loaded into [SLEAP](https://sleap.ai/) for visual inspection and manual correction
 4. **Export** — corrected labels are converted into a `TRACKS.mat` file and analysed by the existing FlyWalker MATLAB scripts
 
-Two model families are implemented:
+Inference runs through one of two paths:
 
-- **SLEAP-NN** (primary) — single-instance pose models (UNet, ConvNeXt, SwinT
-  backbones, with/without ImageNet pretraining) trained via
-  [`sleap-nn`](https://github.com/talmolab/sleap-nn)
-- **ADPT** (secondary, thesis reference) — a custom ResNet-50 + Transformer
-  architecture based on Tang et al., *eLife* 2025, implemented in PyTorch
+- **SLEAP**: any single-instance model trained with
+  [`sleap-nn`](https://github.com/talmolab/sleap-nn). UNet, ConvNeXt and SwinT
+  backbones were tested here. Put the model folder in
+  `Inference_Pipeline/Models/SLEAP_Models/` and the GUI lists it.
+- **Local**: a custom PyTorch network, defined in `model.py` and run by
+  `inference.py`. Put a `.pt` checkpoint in
+  `Inference_Pipeline/Models/VS Code Models/` and the GUI lists it. A
+  checkpoint of the same network works as is. A different network means
+  adapting both `model.py` and `inference.py`.
 
-The best-performing model to date is a pretrained ConvNeXt-tiny SLEAP-NN
-model (test set mean position error ≈1.4 px on a 9-keypoint skeleton: head,
-thorax, abdomen, and six leg tips).
+New SLEAP models, from a fresh training run or an active learning fine-tune,
+plug in without touching the code. The best model trained so far, a
+pretrained ConvNeXt-Tiny, cuts FlyWalker's correction rate per keypoint from
+14.65% to 5.15% on the test set.
 
 ## Repository layout
 
@@ -81,11 +111,10 @@ pip install sleap-nn==0.3.1 sleap-io==0.9.2 sleap==1.6.2 h5py==3.16.0 pandas==3.
     scipy==1.17.1 streamlit==1.56.0 imageio[ffmpeg] pillow
 ```
 
-The exact pins above match `Inference_Pipeline/Installation_requirements.txt`
-(the checkpoints were trained against `sleap-nn==0.3.1` specifically; an
-unpinned install can pull in a version whose config schema no longer matches
-the saved checkpoints). `imageio` and `pillow` are additional runtime
-dependencies of the video-overlay feature not yet captured in that file.
+Keep the pins: the checkpoints were trained against `sleap-nn==0.3.1`
+specifically, and an unpinned install can pull in a version whose config
+schema no longer matches the saved checkpoints. `imageio` and `pillow` are
+needed by the video-overlay feature.
 
 ### 4. Launch the GUI
 
@@ -110,6 +139,6 @@ The GUI has two pages:
 
 ## Status
 
-Actively developed as part of an ongoing thesis. See commit history for
-current progress; model checkpoints and evaluation metrics live under
+Developed as part of an MSc thesis completed in October 2026. Model
+checkpoints and evaluation metrics live under
 `Inference_Pipeline/Models/SLEAP_Models/`.

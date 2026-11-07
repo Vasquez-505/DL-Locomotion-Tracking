@@ -3506,7 +3506,11 @@ fb_RBData = [TIME', DistanceRB', ParaDistRB', PerpDistRB', AngleRB'];
 
 % start Excel (try/catch: falls back to writecell if COM automation fails)
 try
-exl = actxserver('excel.application');
+if ispc
+    exl = actxserver('excel.application');
+else
+    exl = xlsxshim.Application();  % no Excel COM off Windows: same calls, writes .xlsx directly
+end
 exlWkbk = exl.Workbooks;
 % Add workbook
 exlFile = invoke(exlWkbk, 'Add');
@@ -4841,9 +4845,9 @@ if isfield(handles,'evaluate_togglebutton') & get(handles.evaluate_togglebutton,
 % Save the 20 sheets to disk NOW before OTHERS runs — so the file exists
 % even if the OTHERS summary section crashes below.
 % _new suffix avoids locking conflicts with any file left from a prior run.
-% Backslashes required for COM SaveAs on Windows; FileFormat 51 = xlOpenXMLWorkbook (.xlsx).
-output_file_name_excel = strrep([foldername ExcelFileName '_new.xlsx'], '/', '\');
-final_excel_file       = strrep([foldername ExcelFileName '.xlsx'],     '/', '\');
+% Native separators (backslashes required for COM SaveAs on Windows); FileFormat 51 = .xlsx.
+output_file_name_excel = strrep([foldername ExcelFileName '_new.xlsx'], '/', filesep);
+final_excel_file       = strrep([foldername ExcelFileName '.xlsx'],     '/', filesep);
 try; delete(output_file_name_excel); catch; end
 exlFile.SaveAs(output_file_name_excel, 51);
 disp('  20 sheets saved to disk.');

@@ -126,6 +126,10 @@ On Windows, double-click `launch_gui.bat` instead: it finds any conda
 environment with Streamlit installed (checking `flytrack` first) and launches
 the app automatically, no manual `conda activate` needed.
 
+On macOS (Apple Silicon), double-click `launch_gui.command`. See
+[MACOS_SETUP.md](MACOS_SETUP.md) for the environment install and what differs
+from Windows.
+
 Model training and fine-tuning run on Google Colab (see the notebooks in
 `Inference_Pipeline/`); local inference and the GUI run fine on CPU.
 

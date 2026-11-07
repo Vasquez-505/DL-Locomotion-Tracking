@@ -396,7 +396,7 @@ def _strip_comparison(src: str) -> str:
 # ── Prediction pre-step: generates missing labels_pr/gt/metrics files ────────
 
 _PREDICTION_PRE_STEP = '''
-import subprocess as _evsubp, shutil as _evshutil
+import subprocess as _evsubp, shutil as _evshutil, sys
 
 # ── Locate a Python interpreter that has sleap_nn installed ──────────────────
 def _ev_has_sleap_nn(py):
@@ -409,10 +409,8 @@ def _ev_has_sleap_nn(py):
 
 def _ev_find_sleap_py():
     try:
-        import sleap_nn as _m
-        _cand = Path(_m.__file__).parents[3] / 'python.exe'
-        if _cand.exists() and _ev_has_sleap_nn(_cand):
-            return _cand
+        import sleap_nn as _m  # importable here -> this interpreter has it (any OS)
+        return Path(sys.executable)
     except ImportError:
         pass
     for _base in (Path.home() / 'anaconda3', Path.home() / 'miniconda3',
@@ -893,6 +891,20 @@ print(f"Metrics table saved → eval_metrics_summary.csv")
 '''
 
 
+_RUN_STATE_END = 'print(f"Loaded run state: RUN_NAME={RUN_NAME}")\n'
+
+
+def _strip_run_state(src: str) -> str:
+    """Drop the eval cell's `.al_run_state.json` header.
+
+    Evaluating a *selected* model must not be redirected to the last
+    fine-tune run stored in the state file (whose absolute paths may also
+    come from another machine); `_derived` defines everything the body uses.
+    """
+    _, sep, body = src.partition(_RUN_STATE_END)
+    return body if sep else src
+
+
 def al_eval_only_script(nb_path: Path, flags: dict, model_name: str) -> Path:
     """Standalone evaluation for any model: metrics + plots, no comparison.
 
@@ -903,7 +915,7 @@ def al_eval_only_script(nb_path: Path, flags: dict, model_name: str) -> Path:
     nb_flags, cells = _al_nb_flags(nb_path)
     _, s_eval = find_cell(cells, "eval_model")
     nb_flags = _patch_ipython(nb_flags)
-    s_eval   = _patch_ipython(_strip_comparison(s_eval))
+    s_eval   = _patch_ipython(_strip_comparison(_strip_run_state(s_eval)))
     merged = {**flags, "RUN_NAME": model_name}
     _derived = (
         "BASE_DIR       = Path().resolve()\n"
@@ -931,7 +943,7 @@ def al_full_eval_script(nb_path: Path, flags: dict, model_name: str) -> Path:
     _, s_eval = find_cell(cells, "eval_model")
     nb_flags = _patch_ipython(nb_flags)
     # Keep full eval including comparison section (no _strip_comparison)
-    s_eval   = _patch_ipython(s_eval)
+    s_eval   = _patch_ipython(_strip_run_state(s_eval))
     merged = {**flags, "RUN_NAME": model_name}
     _derived = (
         "BASE_DIR       = Path().resolve()\n"
@@ -1198,6 +1210,20 @@ def fix_slp_paths(slp_path: Path, replacements: dict) -> tuple[bool, str]:
             # ── Write-back: three strategies, first success wins ───────────────
             wrote = False
 
+            # Strategy 0: fixed-width bytes (|S<n>) too narrow for the new paths:
+            # assigning would silently truncate the JSON (e.g. Windows -> longer
+            # macOS paths), so recreate the dataset wide enough, keeping attrs.
+            if isinstance(raw, np.ndarray) and raw.dtype.kind == "S":
+                need = max(len(b) for b in new_blobs)
+                if need > raw.dtype.itemsize:
+                    attrs = dict(ds.attrs)
+                    del f["videos_json"]
+                    ds = f.create_dataset(
+                        "videos_json",
+                        data=np.array(new_blobs, dtype=f"S{need}").reshape(raw.shape))
+                    ds.attrs.update(attrs)
+                    wrote = True
+
             # Strategy 1: bulk assignment into existing dataset
             if not wrote:
                 try:
@@ -1233,6 +1259,14 @@ def fix_slp_paths(slp_path: Path, replacements: dict) -> tuple[bool, str]:
                     wrote = True
                 except Exception as e:
                     return False, f"all write strategies failed: {e}"
+
+            # Verify: every stored blob must still be valid JSON
+            back = f["videos_json"][()]
+            for b in (back.flat if isinstance(back, np.ndarray) else [back]):
+                try:
+                    _json.loads(b.decode("utf-8") if isinstance(b, (bytes, bytearray)) else b)
+                except Exception:
+                    return False, "write verification failed: videos_json is not valid JSON"
 
         return True, f"Updated {n_changed} video reference(s)"
 

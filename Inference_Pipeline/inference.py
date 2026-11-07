@@ -481,7 +481,8 @@ def main() -> None:
                         help="Training .slp used as skeleton template")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else
+                          "mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Device      : {device}")
 
     cfg         = _SET_CFG[args.set]

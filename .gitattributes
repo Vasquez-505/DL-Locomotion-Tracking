@@ -1,0 +1,2 @@
+# Shell launcher must keep LF endings, even on Windows checkouts
+*.command text eol=lf

@@ -1,2 +1,4 @@
 # Shell launcher must keep LF endings, even on Windows checkouts
 *.command text eol=lf
+# Windows batch files need CRLF endings (labels/goto can misbehave with LF)
+*.bat text eol=crlf
